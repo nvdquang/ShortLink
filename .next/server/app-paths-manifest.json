@@ -1,0 +1,19 @@
+{
+  "/api/admin/settings/route": "app/api/admin/settings/route.js",
+  "/api/auth/logout/route": "app/api/auth/logout/route.js",
+  "/api/auth/forgot-password/route": "app/api/auth/forgot-password/route.js",
+  "/api/auth/login/route": "app/api/auth/login/route.js",
+  "/api/auth/me/route": "app/api/auth/me/route.js",
+  "/api/auth/reset-password/route": "app/api/auth/reset-password/route.js",
+  "/api/auth/register/route": "app/api/auth/register/route.js",
+  "/api/auth/verify/route": "app/api/auth/verify/route.js",
+  "/api/admin/users/route": "app/api/admin/users/route.js",
+  "/api/links/[code]/analytics/route": "app/api/links/[code]/analytics/route.js",
+  "/api/links/[code]/route": "app/api/links/[code]/route.js",
+  "/api/links/route": "app/api/links/route.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/reset-password/page": "app/reset-password/page.js",
+  "/page": "app/page.js",
+  "/[code]/page": "app/[code]/page.js",
+  "/verify/page": "app/verify/page.js"
+}
