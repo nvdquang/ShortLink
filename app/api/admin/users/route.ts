@@ -11,6 +11,7 @@ type AdminUserRow = {
   role: string;
   plan: string;
   link_limit: number | null;
+  plus_upgraded_at: string | null;
   created_at: string;
   link_count: number;
 };
@@ -31,6 +32,7 @@ function serializeUser(row: AdminUserRow) {
     plan: row.plan,
     linkLimit: row.link_limit,
     linkCount: Number(row.link_count),
+    plusUpgradedAt: row.plus_upgraded_at,
     created_at: row.created_at,
   };
 }
@@ -44,7 +46,7 @@ export async function GET(request: Request) {
     const db = getDb();
     const rows = db
       .prepare(
-        `SELECT Users.id, Users.email, Users.role, Users.plan, Users.link_limit, Users.created_at,
+        `SELECT Users.id, Users.email, Users.role, Users.plan, Users.link_limit, Users.plus_upgraded_at, Users.created_at,
                 (SELECT COUNT(*) FROM Links WHERE Links.user_id = Users.id) AS link_count
          FROM Users ORDER BY Users.created_at DESC`
       )
@@ -68,7 +70,7 @@ export async function PATCH(request: Request) {
     }
 
     const db = getDb();
-    const target = db.prepare("SELECT id, email, role, plan, link_limit FROM Users WHERE id = ?").get(userId) as
+    const target = db.prepare("SELECT id, email, role, plan, link_limit, plus_upgraded_at FROM Users WHERE id = ?").get(userId) as
       | (AdminUserRow & { password_hash?: string })
       | undefined;
     if (!target) {
@@ -84,6 +86,10 @@ export async function PATCH(request: Request) {
       if (plan === "plus") {
         updates.push("plan = ?", "link_limit = NULL");
         values.push(plan);
+        if (target.plan !== "plus") {
+          updates.push("plus_upgraded_at = ?");
+          values.push(new Date().toISOString());
+        }
       } else {
         updates.push("plan = ?");
         values.push(plan);
@@ -106,7 +112,7 @@ export async function PATCH(request: Request) {
 
     const row = db
       .prepare(
-        `SELECT Users.id, Users.email, Users.role, Users.plan, Users.link_limit, Users.created_at,
+        `SELECT Users.id, Users.email, Users.role, Users.plan, Users.link_limit, Users.plus_upgraded_at, Users.created_at,
                 (SELECT COUNT(*) FROM Links WHERE Links.user_id = Users.id) AS link_count
          FROM Users WHERE Users.id = ?`
       )

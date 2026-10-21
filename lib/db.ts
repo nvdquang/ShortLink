@@ -34,6 +34,9 @@ function migrateAndSeedDatabase(db: Database.Database): void {
     db.exec("ALTER TABLE Users ADD COLUMN is_verified INTEGER DEFAULT 0");
     db.exec("UPDATE Users SET is_verified = 1 WHERE role = 'admin'");
   }
+  if (!userColumns.some((col) => col.name === "plus_upgraded_at")) {
+    db.exec("ALTER TABLE Users ADD COLUMN plus_upgraded_at TIMESTAMP NULL");
+  }
 
   // 1b. Ensure EmailTokens table exists (account activation / password reset)
   db.exec(`

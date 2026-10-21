@@ -139,6 +139,7 @@ export type AdminUser = {
   plan: string;
   linkLimit: number | null;
   linkCount: number;
+  plusUpgradedAt: string | null;
   created_at: string;
 };
 

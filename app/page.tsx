@@ -68,6 +68,46 @@ function getFormattedDate(daysFromNow: number): string {
   return `${year}-${month}-${day}`;
 }
 
+function vietQrField(id: string, value: string): string {
+  const length = new TextEncoder().encode(value).length;
+  return `${id}${String(length).padStart(2, "0")}${value}`;
+}
+
+function calculateCrc16(value: string): string {
+  let crc = 0xffff;
+  for (const byte of new TextEncoder().encode(value)) {
+    crc ^= byte << 8;
+    for (let bit = 0; bit < 8; bit += 1) {
+      crc = crc & 0x8000 ? (crc << 1) ^ 0x1021 : crc << 1;
+      crc &= 0xffff;
+    }
+  }
+  return crc.toString(16).toUpperCase().padStart(4, "0");
+}
+
+function createUpgradeVietQr(memo: string): string | null {
+  const accountInfo = vietQrField("00", "970423") + vietQrField("01", "0918884034");
+  const merchantAccountInfo =
+    vietQrField("00", "A000000727") +
+    vietQrField("01", accountInfo) +
+    vietQrField("02", "QRIBFTTA");
+  if (new TextEncoder().encode(memo).length > 95) return null;
+  const additionalData = vietQrField("08", memo);
+
+  const payload =
+    vietQrField("00", "01") +
+    vietQrField("01", "12") +
+    vietQrField("38", merchantAccountInfo) +
+    vietQrField("52", "0000") +
+    vietQrField("53", "704") +
+    vietQrField("54", "60000") +
+    vietQrField("58", "VN") +
+    vietQrField("59", "NGUYEN VU DUY QUANG") +
+    vietQrField("62", additionalData) +
+    "6304";
+  return `${payload}${calculateCrc16(payload)}`;
+}
+
 export default function Home() {
   const [view, setView] = useState<"create" | "analytics" | "admin">("create");
   const [advanced, setAdvanced] = useState(false);
@@ -98,6 +138,7 @@ export default function Home() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [authNotice, setAuthNotice] = useState<string | null>(null);
   const [forgotMode, setForgotMode] = useState(false);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   // System settings for admin
   const [systemSettings, setSystemSettings] = useState<SystemSettings | null>(null);
@@ -395,6 +436,8 @@ export default function Home() {
 
   const freeLimit = systemSettings?.freeLinkLimit ?? 10;
   const usedPercent = Math.min(100, Math.round((links.length / freeLimit) * 100));
+  const upgradeMemo = user ? `Upgrade ${user.email}` : "";
+  const upgradeQrPayload = useMemo(() => upgradeMemo ? createUpgradeVietQr(upgradeMemo) : null, [upgradeMemo]);
 
   return (
     <main className="app-shell">
@@ -525,8 +568,7 @@ export default function Home() {
               </div>
               <p>{user ? `${links.length} / ${freeLimit} links used` : "Sign in to save links"}</p>
               <button
-                onClick={() => (user ? setAdvanced(true) : (setAuthMode("register"), setAuthOpen(true)))}
-                disabled={!!user && user.role !== "admin" && user.plan !== "plus"}
+                onClick={() => (user ? setUpgradeOpen(true) : (setAuthMode("register"), setAuthOpen(true)))}
               >
                 {user ? `Free limit: ${freeLimit} links` : "Create account"} <ArrowUpRight size={14} />
               </button>
@@ -1188,17 +1230,29 @@ export default function Home() {
                     <ArrowUpRight size={16} />
                   </button>
                 </div>
-                <div className="country-list">
-                  {countries.map((country) => (
-                    <div className="country-row" key={country.name}>
-                      <span className="country-flag">{country.flag}</span>
-                      <span className="country-name">{country.name}</span>
-                      <div className="country-track">
-                        <i style={{ width: `${country.value * 2.1}%` }} />
+                <div className="traffic-sources-body">
+                  <div className="country-list">
+                    {countries.map((country) => (
+                      <div className="country-row" key={country.name}>
+                        <span className="country-flag">{country.flag}</span>
+                        <span className="country-name">{country.name}</span>
+                        <div className="country-track">
+                          <i style={{ width: `${country.value * 2.1}%` }} />
+                        </div>
+                        <b>{country.value}%</b>
                       </div>
-                      <b>{country.value}%</b>
-                    </div>
-                  ))}
+                    ))}
+                    {countries.length === 0 && <span className="traffic-empty">No referrer data yet</span>}
+                  </div>
+                  <div className="traffic-qr">
+                    <span>Link QR</span>
+                    {currentLink ? (
+                      <QRCodeSVG value={shortUrl} size={108} level="M" aria-label={`QR code for ${shortUrl}`} />
+                    ) : (
+                      <div className="traffic-qr-empty">Select a link to show its QR code.</div>
+                    )}
+                    {currentLink && <small>/{currentLink.short_code}</small>}
+                  </div>
                 </div>
                 <button
                   className="all-countries"
@@ -1428,6 +1482,7 @@ export default function Home() {
                           <th style={{ padding: "6px 8px" }}>Plan</th>
                           <th style={{ padding: "6px 8px" }}>Links</th>
                           <th style={{ padding: "6px 8px" }}>Limit</th>
+                          <th style={{ padding: "6px 8px" }}>Plus upgraded at</th>
                           <th style={{ padding: "6px 8px" }}>Actions</th>
                         </tr>
                       </thead>
@@ -1474,6 +1529,9 @@ export default function Home() {
                                   }}
                                 />
                               )}
+                            </td>
+                            <td style={{ padding: "6px 8px", whiteSpace: "nowrap" }}>
+                              {u.plusUpgradedAt ? new Date(u.plusUpgradedAt).toLocaleString("vi-VN") : "—"}
                             </td>
                             <td style={{ padding: "6px 8px" }}>
                               {u.role === "admin" ? (
@@ -1655,6 +1713,76 @@ export default function Home() {
             <div className="auth-security">
               <LockKeyhole size={13} /> Passwords hashed with scrypt; secure sessions stored in HttpOnly cookies.
             </div>
+          </section>
+        </div>
+      )}
+
+      {upgradeOpen && user && (
+        <div
+          className="auth-overlay"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setUpgradeOpen(false);
+          }}
+        >
+          <section className="auth-dialog upgrade-dialog" role="dialog" aria-modal="true" aria-labelledby="upgrade-title">
+            <button className="auth-close icon-button" aria-label="Close" onClick={() => setUpgradeOpen(false)}>
+              <X size={18} />
+            </button>
+            <div className="auth-mark upgrade-mark">
+              <Sparkles size={19} />
+            </div>
+            <div className="auth-kicker">UPGRADE YOUR PLAN</div>
+            <h2 id="upgrade-title">Upgrade to Plus</h2>
+            <p className="auth-subtitle">Quét mã VietQR bằng ứng dụng ngân hàng để chuyển khoản nâng cấp.</p>
+
+            <div className="upgrade-price">
+              <span className="upgrade-original-price">150.000đ/năm</span>
+              <span className="upgrade-discount">Giảm 60%</span>
+              <strong>60.000đ/năm</strong>
+            </div>
+
+            <div className="upgrade-content-grid">
+              <ul className="upgrade-benefits">
+                <li>
+                  <div><strong>Không giới hạn số link</strong><span>Tạo bao nhiêu short link tùy thích, không lo chạm hạn mức.</span></div>
+                  <div><strong>Unlimited short links</strong><span>Create as many short links as you need, without plan limits.</span></div>
+                </li>
+                <li>
+                  <div><strong>Link không hết hạn</strong><span>Các liên kết luôn hoạt động, trừ khi bạn chủ động xóa hoặc chỉnh sửa.</span></div>
+                  <div><strong>Links that never expire</strong><span>Your links stay active unless you choose to delete or edit them.</span></div>
+                </li>
+                <li>
+                  <div><strong>Link mang thương hiệu riêng</strong><span>Tùy biến alias, tên miền và QR với logo thương hiệu của bạn.</span></div>
+                  <div><strong>Branded short links</strong><span>Customize aliases, domains, and QR codes with your brand logo.</span></div>
+                </li>
+              </ul>
+
+              <div className="upgrade-payment">
+                <div className="upgrade-qr-column">
+                  <div className="vietqr-logo" aria-label="VietQR">
+                    <svg aria-hidden="true" viewBox="0 0 48 44">
+                      <path d="M7 8 20 33c1.5 3 5.5 3.2 7.3.3L42 7" />
+                    </svg>
+                    <span><b>Viet</b><strong>QR</strong></span>
+                  </div>
+                  <div className="upgrade-qr" aria-label="VietQR chuyển khoản">
+                    {upgradeQrPayload ? (
+                      <QRCodeSVG value={upgradeQrPayload} size={208} level="M" />
+                    ) : (
+                      <p role="alert">Không thể tạo mã QR vì nội dung chuyển khoản quá dài.</p>
+                    )}
+                  </div>
+                </div>
+                <div className="upgrade-payment-details">
+                  <div><span>Người nhận</span><strong>NGUYEN VU DUY QUANG</strong></div>
+                  <div><span>Số tài khoản</span><strong>0918884034</strong></div>
+                  <div><span>Ngân hàng</span><strong>TPBank</strong></div>
+                  <div><span>Nội dung chuyển khoản</span><strong>{upgradeMemo}</strong></div>
+                </div>
+              </div>
+            </div>
+            <p className="upgrade-note">QR đã điền sẵn số tiền 60.000đ. Sau khi chuyển khoản, vui lòng chờ quản trị viên xác nhận nâng cấp tài khoản.</p>
           </section>
         </div>
       )}

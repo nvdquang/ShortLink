@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS Users (
     plan VARCHAR(10) DEFAULT 'free',
     link_limit INTEGER,
     is_verified INTEGER DEFAULT 0,
+    plus_upgraded_at TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
