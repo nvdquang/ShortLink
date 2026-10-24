@@ -37,6 +37,19 @@ function migrateAndSeedDatabase(db: Database.Database): void {
   if (!userColumns.some((col) => col.name === "plus_upgraded_at")) {
     db.exec("ALTER TABLE Users ADD COLUMN plus_upgraded_at TIMESTAMP NULL");
   }
+  if (!userColumns.some((col) => col.name === "plus_expires_at")) {
+    db.exec("ALTER TABLE Users ADD COLUMN plus_expires_at TIMESTAMP NULL");
+  }
+  db.exec(`
+    UPDATE Users
+    SET plus_expires_at = strftime('%Y-%m-%dT%H:%M:%fZ', plus_upgraded_at, '+1 year')
+    WHERE plan = 'plus' AND plus_upgraded_at IS NOT NULL AND plus_expires_at IS NULL
+  `);
+
+  const linkColumns = db.pragma("table_info(Links)") as { name: string }[];
+  if (!linkColumns.some((col) => col.name === "expired_url")) {
+    db.exec("ALTER TABLE Links ADD COLUMN expired_url TEXT NULL");
+  }
 
   // 1b. Ensure EmailTokens table exists (account activation / password reset)
   db.exec(`

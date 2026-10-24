@@ -43,6 +43,47 @@ const redirectResponse = await fetch(`${baseUrl}/${alias}`, {
 assert.equal(redirectResponse.status, 307, "valid short codes should return 307");
 assert.equal(redirectResponse.headers.get("location"), "https://example.org/shortlink-e2e");
 
+const expiredDefaultResponse = await fetch(`${baseUrl}/api/links`, {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({
+    originalUrl: "https://example.org/expired-default",
+    expiresAt: new Date(Date.now() - 60_000).toISOString(),
+  }),
+});
+assert.equal(expiredDefaultResponse.status, 201);
+const expiredDefaultLink = await expiredDefaultResponse.json();
+assert.equal(expiredDefaultLink.link.expired_url, null);
+const expiredDefaultRedirect = await fetch(`${baseUrl}/${expiredDefaultLink.link.short_code}`, { redirect: "manual" });
+assert.equal(expiredDefaultRedirect.status, 307, "expired links without a fallback should redirect home");
+assert.equal(expiredDefaultRedirect.headers.get("location"), "/");
+
+const expiredFallbackResponse = await fetch(`${baseUrl}/api/links`, {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({
+    originalUrl: "https://example.org/expired-fallback",
+    expiresAt: new Date(Date.now() - 60_000).toISOString(),
+    expiredUrl: "https://example.org/link-expired",
+  }),
+});
+assert.equal(expiredFallbackResponse.status, 201);
+const expiredFallbackLink = await expiredFallbackResponse.json();
+assert.equal(expiredFallbackLink.link.expired_url, "https://example.org/link-expired");
+const expiredFallbackRedirect = await fetch(`${baseUrl}/${expiredFallbackLink.link.short_code}`, { redirect: "manual" });
+assert.equal(expiredFallbackRedirect.status, 307);
+assert.equal(expiredFallbackRedirect.headers.get("location"), "https://example.org/link-expired");
+const updateExpiredUrl = await fetch(`${baseUrl}/api/links/${expiredFallbackLink.link.short_code}`, {
+  method: "PATCH",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({ expiredUrl: "https://example.org/updated-link-expired" }),
+});
+assert.equal(updateExpiredUrl.status, 200, "expired_url should be updatable");
+assert.equal((await updateExpiredUrl.json()).link.expired_url, "https://example.org/updated-link-expired");
+const updatedExpiredRedirect = await fetch(`${baseUrl}/${expiredFallbackLink.link.short_code}`, { redirect: "manual" });
+assert.equal(updatedExpiredRedirect.status, 307);
+assert.equal(updatedExpiredRedirect.headers.get("location"), "https://example.org/updated-link-expired");
+
 const analyticsResponse = await fetch(`${baseUrl}/api/links/${alias}/analytics`);
 assert.equal(analyticsResponse.status, 200);
 const analytics = await analyticsResponse.json();
@@ -63,6 +104,8 @@ assert.equal(inactiveRedirect.status, 404, "inactive links should not redirect")
 
 const deleteResponse = await fetch(`${baseUrl}/api/links/${alias}`, { method: "DELETE" });
 assert.equal(deleteResponse.status, 200);
+await fetch(`${baseUrl}/api/links/${expiredDefaultLink.link.short_code}`, { method: "DELETE" });
+await fetch(`${baseUrl}/api/links/${expiredFallbackLink.link.short_code}`, { method: "DELETE" });
 const deletedAnalyticsResponse = await fetch(`${baseUrl}/api/links/${alias}/analytics`);
 assert.equal(deletedAnalyticsResponse.status, 404, "deleted links should no longer have analytics");
 

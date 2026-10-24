@@ -21,6 +21,7 @@ export async function POST(request: Request) {
       title: asString(body.title) ?? null,
       qrConfig: body.qrConfig,
       expiresAt: asString(body.expiresAt) ?? null,
+      expiredUrl: body.expiredUrl === null ? null : asString(body.expiredUrl) ?? null,
       userId: user?.id ?? null,
       userRole: user?.role ?? null,
       userPlan: user?.plan ?? null,

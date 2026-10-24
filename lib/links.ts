@@ -18,6 +18,7 @@ export type LinkRecord = {
   qr_config: string | null;
   click_count: number;
   expires_at: string | null;
+  expired_url: string | null;
   is_active: number;
   user_id: string | null;
   created_at: string;
@@ -30,6 +31,16 @@ export class ApiError extends Error {
     super(message);
     this.status = status;
     this.name = "ApiError";
+  }
+}
+
+export class ExpiredLinkError extends ApiError {
+  expiredUrl: string | null;
+
+  constructor(expiredUrl: string | null) {
+    super(410, "Link has expired.");
+    this.expiredUrl = expiredUrl;
+    this.name = "ExpiredLinkError";
   }
 }
 
@@ -95,6 +106,7 @@ export type CreateLinkInput = {
   title?: string | null;
   qrConfig?: unknown;
   expiresAt?: string | null;
+  expiredUrl?: string | null;
   userId?: string | null;
   userRole?: string | null;
   userPlan?: string | null;
@@ -123,6 +135,7 @@ export function createLink(input: CreateLinkInput): LinkRecord {
   const title = input.title?.trim().slice(0, MAX_TITLE_LENGTH) || null;
   const normalizedExpiry = normalizeExpiry(input.expiresAt);
   let expiresAt = normalizedExpiry;
+  const expiredUrl = input.expiredUrl ? normalizeUrl(input.expiredUrl) : null;
   const qrConfig = input.qrConfig == null ? null : JSON.stringify(input.qrConfig);
   const userId = input.userId ?? null;
   const userRole = input.userRole ?? null;
@@ -159,14 +172,14 @@ export function createLink(input: CreateLinkInput): LinkRecord {
   }
 
   const insert = db.prepare(
-    "INSERT INTO Links (id, original_url, short_code, custom_alias, title, qr_config, expires_at, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+    "INSERT INTO Links (id, original_url, short_code, custom_alias, title, qr_config, expires_at, expired_url, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
   );
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const code = alias ?? generateUniqueCode();
     try {
       const id = randomUUID();
-      insert.run(id, originalUrl, code, alias, title, qrConfig, expiresAt, userId);
+      insert.run(id, originalUrl, code, alias, title, qrConfig, expiresAt, expiredUrl, userId);
       return db.prepare("SELECT * FROM Links WHERE id = ?").get(id) as LinkRecord;
     } catch (error) {
       if (isUniqueViolation(error)) {
@@ -205,6 +218,7 @@ export function listLinks(limit = 20, userId?: string | null): LinkRecord[] {
 export type UpdateLinkInput = {
   title?: string | null;
   expiresAt?: string | null;
+  expiredUrl?: string | null;
   isActive?: boolean;
   qrConfig?: unknown;
 };
@@ -238,12 +252,18 @@ export function updateLink(code: string, input: UpdateLinkInput, userId?: string
   }
 
   const title = input.title === undefined ? existing.title : input.title?.trim().slice(0, MAX_TITLE_LENGTH) || null;
+  const expiredUrl = input.expiredUrl === undefined
+    ? existing.expired_url
+    : input.expiredUrl === null || input.expiredUrl.trim() === ""
+      ? null
+      : normalizeUrl(input.expiredUrl);
   const isActive = input.isActive === undefined ? existing.is_active : input.isActive ? 1 : 0;
   const qrConfig = input.qrConfig === undefined ? existing.qr_config : input.qrConfig == null ? null : JSON.stringify(input.qrConfig);
 
-  db.prepare("UPDATE Links SET title = ?, expires_at = ?, is_active = ?, qr_config = ? WHERE id = ?").run(
+  db.prepare("UPDATE Links SET title = ?, expires_at = ?, expired_url = ?, is_active = ?, qr_config = ? WHERE id = ?").run(
     title,
     expiresAt,
+    expiredUrl,
     isActive,
     qrConfig,
     existing.id,
@@ -266,7 +286,18 @@ export function resolveLink(code: string): LinkRecord {
   if (!link) throw new ApiError(404, "Link not found.");
   if (!link.is_active) throw new ApiError(410, "Link has been deactivated.");
   if (link.expires_at && new Date(link.expires_at).getTime() <= Date.now()) {
-    throw new ApiError(410, "Link has expired.");
+    let expiredUrl = link.expired_url;
+    if (!expiredUrl) {
+      expiredUrl = getSystemSettings().expiredRedirectUrl || null;
+      if (expiredUrl) {
+        getDb().prepare("UPDATE Links SET expired_url = ? WHERE id = ? AND expired_url IS NULL").run(expiredUrl, link.id);
+        const persistedUrl = getDb().prepare("SELECT expired_url FROM Links WHERE id = ?").get(link.id) as
+          | { expired_url: string | null }
+          | undefined;
+        expiredUrl = persistedUrl?.expired_url ?? expiredUrl;
+      }
+    }
+    throw new ExpiredLinkError(expiredUrl);
   }
   return link;
 }

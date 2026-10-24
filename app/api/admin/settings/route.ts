@@ -22,9 +22,30 @@ export async function PATCH(request: Request) {
     }
 
     const body = await readJsonBody(request);
+    let expiredRedirectUrl: string | undefined;
+    if (body.expiredRedirectUrl !== undefined) {
+      if (typeof body.expiredRedirectUrl !== "string") {
+        return NextResponse.json({ error: "Expired link redirect URL must be a string." }, { status: 400 });
+      }
+      const value = body.expiredRedirectUrl.trim();
+      if (value) {
+        try {
+          const parsedUrl = new URL(value);
+          if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+            throw new Error("Unsupported URL protocol.");
+          }
+          expiredRedirectUrl = parsedUrl.toString();
+        } catch {
+          return NextResponse.json({ error: "Expired link redirect URL must be a valid HTTP or HTTPS URL." }, { status: 400 });
+        }
+      } else {
+        expiredRedirectUrl = "";
+      }
+    }
     const updated = updateSystemSettings({
       defaultQrLogo: typeof body.defaultQrLogo === "string" ? body.defaultQrLogo : undefined,
       shortlinkDomain: typeof body.shortlinkDomain === "string" ? body.shortlinkDomain : undefined,
+      expiredRedirectUrl,
       freeLinkLimit: body.freeLinkLimit !== undefined ? Number(body.freeLinkLimit) : undefined,
     });
 

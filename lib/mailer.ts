@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+import nodemailer, { type Transporter } from "nodemailer";
 
 /**
  * Sends transactional emails via SMTP.
@@ -10,15 +10,15 @@ import nodemailer from "nodemailer";
  * (dev mode) instead of failing, so registration still works.
  */
 
-const APP_URL = process.env.APP_URL ?? "http://localhost:3000";
+const APP_URL = process.env.APP_URL ?? "http://127.0.0.1:3333";
 
 function isConfigured(): boolean {
   return Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
 }
 
-let transporter: nodemailer.Transporter | null = null;
+let transporter: Transporter | null = null;
 
-function getTransporter(): nodemailer.Transporter | null {
+function getTransporter(): Transporter | null {
   if (!isConfigured()) return null;
   if (!transporter) {
     transporter = nodemailer.createTransport({

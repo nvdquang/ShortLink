@@ -13,6 +13,7 @@ export type UserRecord = {
   role: string;
   plan: string;
   linkLimit: number | null;
+  plusExpiresAt: string | null;
   is_verified: number;
   created_at: string;
 };
@@ -31,16 +32,37 @@ function verifyPassword(password: string, storedHash: string): boolean {
   return expected.length === actual.length && timingSafeEqual(expected, actual);
 }
 
-function publicUser(user: { id: string; email: string; role?: string | null; plan?: string | null; link_limit?: number | null; is_verified?: number | null; created_at: string }): UserRecord {
+type DatabaseUser = {
+  id: string;
+  email: string;
+  role?: string | null;
+  plan?: string | null;
+  link_limit?: number | null;
+  plus_expires_at?: string | null;
+  is_verified?: number | null;
+  created_at: string;
+};
+
+function publicUser(user: DatabaseUser): UserRecord {
   return {
     id: user.id,
     email: user.email,
     role: user.role ?? "user",
-    is_verified: Boolean(user.is_verified ?? 1),
+    is_verified: user.is_verified ?? 1,
     plan: user.plan ?? "free",
     linkLimit: user.link_limit ?? null,
+    plusExpiresAt: user.plus_expires_at ?? null,
     created_at: user.created_at,
   };
+}
+
+function expirePlusPlan(user: DatabaseUser): DatabaseUser {
+  if (user.plan !== "plus" || !user.plus_expires_at) return user;
+  const expiresAt = new Date(user.plus_expires_at).getTime();
+  if (!Number.isFinite(expiresAt) || expiresAt > Date.now()) return user;
+
+  getDb().prepare("UPDATE Users SET plan = 'free' WHERE id = ? AND plan = 'plus'").run(user.id);
+  return { ...user, plan: "free" };
 }
 
 function issueSession(userId: string): { token: string; user: UserRecord } {
@@ -48,12 +70,12 @@ function issueSession(userId: string): { token: string; user: UserRecord } {
   const token = randomBytes(32).toString("base64url");
   const tokenHash = createHash("sha256").update(token).digest("hex");
   const expiresAt = new Date(Date.now() + SESSION_TTL_SECONDS * 1000).toISOString();
-  const user = db.prepare("SELECT id, email, role, plan, link_limit, is_verified, created_at FROM Users WHERE id = ?").get(userId) as (UserRecord & { role: string }) | undefined;
+  const user = db.prepare("SELECT id, email, role, plan, link_limit, plus_expires_at, is_verified, created_at FROM Users WHERE id = ?").get(userId) as DatabaseUser | undefined;
   if (!user) throw new ApiError(401, "Account no longer exists.");
   db.prepare("INSERT INTO AuthSessions (id, user_id, token_hash, expires_at) VALUES (?, ?, ?, ?)").run(
     randomUUID(), userId, tokenHash, expiresAt,
   );
-  return { token, user: publicUser(user) };
+  return { token, user: publicUser(expirePlusPlan(user)) };
 }
 
 export function registerUser(emailInput: string, password: string): { token: string; user: UserRecord } {
@@ -89,9 +111,9 @@ export function getUserForSession(token: string | null | undefined): UserRecord 
   if (!token) return null;
   const tokenHash = createHash("sha256").update(token).digest("hex");
   const user = getDb().prepare(
-    "SELECT Users.id, Users.email, Users.role, Users.plan, Users.link_limit, Users.is_verified, Users.created_at FROM AuthSessions INNER JOIN Users ON Users.id = AuthSessions.user_id WHERE AuthSessions.token_hash = ? AND AuthSessions.expires_at > ?",
-  ).get(tokenHash, new Date().toISOString()) as UserRecord & { link_limit?: number | null } | undefined;
-  return user ? publicUser(user) : null;
+    "SELECT Users.id, Users.email, Users.role, Users.plan, Users.link_limit, Users.plus_expires_at, Users.is_verified, Users.created_at FROM AuthSessions INNER JOIN Users ON Users.id = AuthSessions.user_id WHERE AuthSessions.token_hash = ? AND AuthSessions.expires_at > ?",
+  ).get(tokenHash, new Date().toISOString()) as DatabaseUser | undefined;
+  return user ? publicUser(expirePlusPlan(user)) : null;
 }
 
 export function revokeSession(token: string | null | undefined): void {

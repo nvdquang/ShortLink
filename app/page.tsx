@@ -122,6 +122,7 @@ export default function Home() {
   const [mobileNav, setMobileNav] = useState(false);
   const [password, setPassword] = useState("");
   const [expiry, setExpiry] = useState<string>("");
+  const [expiredUrl, setExpiredUrl] = useState("");
   const [links, setLinks] = useState<LinkRecord[]>([]);
   const [currentLink, setCurrentLink] = useState<LinkRecord | null>(null);
   const [analytics, setAnalytics] = useState<AnalyticsSummary | null>(null);
@@ -144,17 +145,19 @@ export default function Home() {
   const [systemSettings, setSystemSettings] = useState<SystemSettings | null>(null);
   const [adminDefaultLogo, setAdminDefaultLogo] = useState("");
   const [adminDomain, setAdminDomain] = useState("");
+  const [adminExpiredRedirectUrl, setAdminExpiredRedirectUrl] = useState("");
   const [adminFreeLimit, setAdminFreeLimit] = useState(10);
   const [adminSaving, setAdminSaving] = useState(false);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [adminUsersLoading, setAdminUsersLoading] = useState(false);
+  const [adminUserEmailFilter, setAdminUserEmailFilter] = useState("");
   const [adminAlert, setAdminAlert] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   const effectiveLogo = logo || systemSettings?.defaultQrLogo || null;
   const configuredDomain = systemSettings?.shortlinkDomain?.trim() || "";
   const displayDomain = configuredDomain
     ? configuredDomain.replace(/^https?:\/\//i, "").replace(/\/+$/, "")
-    : (typeof window !== "undefined" ? window.location.host : "localhost:3000");
+    : (typeof window !== "undefined" ? window.location.host : "127.0.0.1:3333");
 
   const safeUrl = useMemo(() => {
     if (!url.trim()) return "https://example.com/product/summer-collection";
@@ -191,6 +194,7 @@ export default function Home() {
         setSystemSettings(settings);
         setAdminDefaultLogo(settings.defaultQrLogo || "");
         setAdminDomain(settings.shortlinkDomain || "");
+        setAdminExpiredRedirectUrl(settings.expiredRedirectUrl || "");
         setAdminFreeLimit(settings.freeLinkLimit || 10);
       })
       .catch(() => undefined);
@@ -267,6 +271,7 @@ export default function Home() {
         customAlias: alias.trim() || null,
         title: null,
         expiresAt: finalExpiry,
+        expiredUrl: expiredUrl.trim() || null,
         qrConfig: { color: qrColor, background: bgColor, resolution, logo: effectiveLogo },
       });
       setCurrentLink(link);
@@ -391,9 +396,11 @@ export default function Home() {
       const { settings } = await updateSystemSettingsApi({
         defaultQrLogo: adminDefaultLogo,
         shortlinkDomain: adminDomain,
+        expiredRedirectUrl: adminExpiredRedirectUrl,
         freeLinkLimit: adminFreeLimit,
       });
       setSystemSettings(settings);
+      setAdminExpiredRedirectUrl(settings.expiredRedirectUrl);
       setAdminAlert({ type: "success", message: "All system settings saved successfully!" });
     } catch (err) {
       setAdminAlert({ type: "error", message: err instanceof Error ? err.message : "Failed to save settings." });
@@ -438,6 +445,9 @@ export default function Home() {
   const usedPercent = Math.min(100, Math.round((links.length / freeLimit) * 100));
   const upgradeMemo = user ? `Upgrade ${user.email}` : "";
   const upgradeQrPayload = useMemo(() => upgradeMemo ? createUpgradeVietQr(upgradeMemo) : null, [upgradeMemo]);
+  const filteredAdminUsers = adminUsers.filter((adminUser) =>
+    adminUser.email.toLowerCase().includes(adminUserEmailFilter.trim().toLowerCase()),
+  );
 
   return (
     <main className="app-shell">
@@ -650,6 +660,10 @@ export default function Home() {
                 </div>
                 <h1>Create New Link</h1>
                 <p>Shorten URLs and generate customized QR codes in seconds.</p>
+                <p>
+                  ShortLink giúp bạn rút gọn link, tạo mã QR tùy chỉnh và theo dõi lượt nhấp nhanh chóng,
+                  thuận tiện trên cùng một nền tảng.
+                </p>
               </div>
               <button className="history-button" onClick={() => setView("analytics")}>
                 <Activity size={16} /> Link History
@@ -759,7 +773,7 @@ export default function Home() {
                           id="domain"
                           type="text"
                           readOnly
-                          value={configuredDomain || "localhost:3000 (Default)"}
+                          value={configuredDomain || "127.0.0.1:3333 (Default)"}
                           title={user?.role === "admin" ? "Configured in System Settings" : "System domain set by administrator"}
                           style={{ background: "#f8fafc", cursor: "default" }}
                         />
@@ -789,6 +803,18 @@ export default function Home() {
                           value={expiry}
                           max={mounted && user?.role !== "admin" && user?.plan !== "plus" ? getFormattedDate(5) : undefined}
                           onChange={(e) => setExpiry(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="input-label" htmlFor="expired-url">
+                          Redirect URL After Expiration
+                        </label>
+                        <input
+                          id="expired-url"
+                          type="url"
+                          placeholder="https://example.com/link-expired"
+                          value={expiredUrl}
+                          onChange={(e) => setExpiredUrl(e.target.value)}
                         />
                       </div>
                     </div>
@@ -1285,7 +1311,7 @@ export default function Home() {
                   <ShieldCheck size={14} /> SYSTEM ADMINISTRATION
                 </div>
                 <h1>System Configuration</h1>
-                <p>Manage the default QR code logo, custom shortlink domain, and account creation limits.</p>
+                <p>Manage QR codes, shortlink domains, expired-link redirects, and account creation limits.</p>
               </div>
               <span className="admin-badge" style={{ fontSize: 11, padding: "6px 12px" }}>
                 Account: {user?.email}
@@ -1394,12 +1420,12 @@ export default function Home() {
                     <input
                       id="admin-domain-input"
                       type="text"
-                      placeholder="localhost:3000 or slink.vn or https://s.company.com"
+                      placeholder="127.0.0.1:3333 or slink.vn or https://s.company.com"
                       value={adminDomain}
                       onChange={(e) => setAdminDomain(e.target.value)}
                     />
                     <span className="admin-field-hint">
-                      Leave blank to default to browser host (e.g. <code>localhost:3000</code>).
+                      Leave blank to default to browser host (e.g. <code>127.0.0.1:3333</code>).
                     </span>
                   </div>
 
@@ -1410,7 +1436,7 @@ export default function Home() {
                     <code style={{ fontSize: 12, color: "var(--sky)", fontWeight: 700 }}>
                       {adminDomain.trim()
                         ? `${adminDomain.replace(/^https?:\/\//i, "").replace(/\/+$/, "")}/aB3x9Qr`
-                        : `${typeof window !== "undefined" ? window.location.host : "localhost:3000"}/aB3x9Qr`}
+                        : `${typeof window !== "undefined" ? window.location.host : "127.0.0.1:3333"}/aB3x9Qr`}
                     </code>
                   </div>
                 </div>
@@ -1448,16 +1474,42 @@ export default function Home() {
                     </span>
                   </div>
                 </div>
+
+                {/* Setting 4: Expired Link Redirect */}
+                <div className="admin-card">
+                  <div className="admin-card-head">
+                    <div className="admin-card-icon blue">
+                      <ArrowUpRight size={19} />
+                    </div>
+                    <div>
+                      <h2>4. Expired Link Redirect URL</h2>
+                      <p>Fallback destination for expired links that do not have their own redirect URL.</p>
+                    </div>
+                  </div>
+                  <div className="admin-field">
+                    <label htmlFor="admin-expired-redirect-url">System Expired URL</label>
+                    <input
+                      id="admin-expired-redirect-url"
+                      type="url"
+                      placeholder="https://example.com/link-expired"
+                      value={adminExpiredRedirectUrl}
+                      onChange={(e) => setAdminExpiredRedirectUrl(e.target.value)}
+                    />
+                    <span className="admin-field-hint">
+                      When an expired link is opened, this URL is saved to its <code>expired_url</code> field and used as the redirect destination. Leave blank to redirect to the homepage.
+                    </span>
+                  </div>
+                </div>
               </div>
 
-              {/* Setting 4: User Management (plan & per-user limits) */}
+              {/* Setting 5: User Management (plan & per-user limits) */}
               <div className="admin-card" style={{ marginTop: 16 }}>
                 <div className="admin-card-head">
                   <div className="admin-card-icon">
                     <Users size={19} />
                   </div>
                   <div>
-                    <h2>4. User Management — Plans & Link Limits</h2>
+                    <h2>5. User Management — Plans & Link Limits</h2>
                     <p>Upgrade a user from Free to Plus (unlimited links & unlimited expiry) or raise their personal link creation limit.</p>
                   </div>
                 </div>
@@ -1473,7 +1525,18 @@ export default function Home() {
                 </button>
 
                 {adminUsers.length > 0 && (
-                  <div style={{ overflowX: "auto" }}>
+                  <>
+                    <div className="admin-field" style={{ maxWidth: 360, marginBottom: 10 }}>
+                      <label htmlFor="admin-user-email-filter">Lọc danh sách theo email</label>
+                      <input
+                        id="admin-user-email-filter"
+                        type="search"
+                        placeholder="Nhập email cần tìm"
+                        value={adminUserEmailFilter}
+                        onChange={(event) => setAdminUserEmailFilter(event.target.value)}
+                      />
+                    </div>
+                    <div style={{ overflowX: "auto" }}>
                     <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
                       <thead>
                         <tr style={{ textAlign: "left", color: "#64748b", borderBottom: "1px solid var(--line)", fontSize: 10, textTransform: "uppercase", letterSpacing: 0.4 }}>
@@ -1483,11 +1546,18 @@ export default function Home() {
                           <th style={{ padding: "6px 8px" }}>Links</th>
                           <th style={{ padding: "6px 8px" }}>Limit</th>
                           <th style={{ padding: "6px 8px" }}>Plus upgraded at</th>
+                          <th style={{ padding: "6px 8px" }}>Hạn nâng cấp</th>
                           <th style={{ padding: "6px 8px" }}>Actions</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {adminUsers.map((u) => (
+                        {filteredAdminUsers.length === 0 ? (
+                          <tr>
+                            <td colSpan={8} style={{ padding: "12px 8px", color: "#64748b", textAlign: "center" }}>
+                              Không tìm thấy tài khoản phù hợp.
+                            </td>
+                          </tr>
+                        ) : filteredAdminUsers.map((u) => (
                           <tr key={u.id} style={{ borderBottom: "1px solid var(--line)" }}>
                             <td style={{ padding: "6px 8px", fontWeight: 600 }}>{u.email}</td>
                             <td style={{ padding: "6px 8px" }}>
@@ -1533,6 +1603,9 @@ export default function Home() {
                             <td style={{ padding: "6px 8px", whiteSpace: "nowrap" }}>
                               {u.plusUpgradedAt ? new Date(u.plusUpgradedAt).toLocaleString("vi-VN") : "—"}
                             </td>
+                            <td style={{ padding: "6px 8px", whiteSpace: "nowrap" }}>
+                              {u.plusExpiresAt ? new Date(u.plusExpiresAt).toLocaleDateString("vi-VN") : "—"}
+                            </td>
                             <td style={{ padding: "6px 8px" }}>
                               {u.role === "admin" ? (
                                 <span style={{ fontSize: 10, color: "#94a3b8" }}>—</span>
@@ -1564,6 +1637,7 @@ export default function Home() {
                       PLUS accounts have unlimited links and can set any expiration date. FREE accounts use the plan limit above (or their personal limit) and a 5-day expiry cap.
                     </span>
                   </div>
+                  </>
                 )}
               </div>
 
@@ -1737,8 +1811,8 @@ export default function Home() {
             <p className="auth-subtitle">Quét mã VietQR bằng ứng dụng ngân hàng để chuyển khoản nâng cấp.</p>
 
             <div className="upgrade-price">
-              <span className="upgrade-original-price">150.000đ/năm</span>
-              <span className="upgrade-discount">Giảm 60%</span>
+              <span className="upgrade-original-price">400.000đ/năm</span>
+              <span className="upgrade-discount">Giảm 85%</span>
               <strong>60.000đ/năm</strong>
             </div>
 
@@ -1786,6 +1860,12 @@ export default function Home() {
           </section>
         </div>
       )}
+      <footer className="author-footer">
+        <span>Author: MSc. Nguyen Vu Duy Quang</span>
+        <a href="mailto:nvdquang@gmail.com">Email: nvdquang@gmail.com</a>
+        <a href="tel:+84918884034">Mobile: (+84) 0918884034</a>
+        <span>Faculty of Information Technology - Lac Hong University - Viet Nam</span>
+      </footer>
     </main>
   );
 }

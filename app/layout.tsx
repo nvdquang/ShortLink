@@ -2,8 +2,31 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ShortLink Studio - URL Shortener & QR Code Generator",
-  description: "Create short links and customized QR codes, track click performance and analytics.",
+  title: "ShortLink - Rút gọn link và tạo mã QR trực tuyến",
+  description:
+    "Rút gọn link nhanh chóng với ShortLink. Tạo mã QR tùy chỉnh, quản lý URL và theo dõi lượt nhấp dễ dàng trên cùng một nền tảng.",
+  applicationName: "ShortLink",
+  keywords: [
+    "rút gọn link",
+    "tạo link rút gọn",
+    "tạo mã QR",
+    "quản lý link",
+    "thống kê lượt nhấp",
+  ],
+  openGraph: {
+    title: "ShortLink - Rút gọn link và tạo mã QR trực tuyến",
+    description:
+      "Rút gọn link, tạo mã QR tùy chỉnh và theo dõi lượt nhấp dễ dàng với ShortLink.",
+    type: "website",
+    locale: "vi_VN",
+    siteName: "ShortLink",
+  },
+  twitter: {
+    card: "summary",
+    title: "ShortLink - Rút gọn link và tạo mã QR trực tuyến",
+    description:
+      "Rút gọn link, tạo mã QR tùy chỉnh và theo dõi lượt nhấp dễ dàng với ShortLink.",
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

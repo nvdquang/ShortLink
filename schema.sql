@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS Users (
     link_limit INTEGER,
     is_verified INTEGER DEFAULT 0,
     plus_upgraded_at TIMESTAMP NULL,
+    plus_expires_at TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -22,6 +23,7 @@ CREATE TABLE IF NOT EXISTS Links (
     qr_config JSON,
     click_count INT DEFAULT 0,
     expires_at TIMESTAMP NULL,
+    expired_url TEXT NULL,
     is_active BOOLEAN DEFAULT TRUE,
     user_id VARCHAR(36),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

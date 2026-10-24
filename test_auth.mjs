@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 
-const baseUrl = process.env.SHORTLINK_TEST_URL ?? "http://localhost:3000";
+const baseUrl = process.env.SHORTLINK_TEST_URL ?? "http://127.0.0.1:3333";
 const email = `shortlink-${randomUUID()}@example.test`;
 const password = "secure-shortlink-password";
 const request = async (route, init = {}) => fetch(`${baseUrl}${route}`, init);

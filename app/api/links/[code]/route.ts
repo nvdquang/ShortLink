@@ -33,6 +33,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     const link = updateLink(await resolveCode(context), {
       title: asString(body.title),
       expiresAt: asString(body.expiresAt),
+      expiredUrl: body.expiredUrl === null ? null : asString(body.expiredUrl),
       isActive: asBoolean(body.isActive),
       qrConfig: body.qrConfig,
     }, user?.id ?? null, user?.role ?? null, user?.plan ?? null);

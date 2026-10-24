@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { ApiError, resolveLink } from "@/lib/links";
+import { ApiError, ExpiredLinkError, resolveLink } from "@/lib/links";
 import { clientIp } from "@/lib/http";
 import { recordClick } from "@/lib/analytics";
 
@@ -23,6 +23,9 @@ export default async function ShortCodePage({ params }: PageProps) {
     });
     redirect(link.original_url);
   } catch (error) {
+    if (error instanceof ExpiredLinkError) {
+      redirect(error.expiredUrl ?? "/");
+    }
     if (error instanceof ApiError) {
       notFound();
     }

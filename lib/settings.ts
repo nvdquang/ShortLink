@@ -3,12 +3,14 @@ import { getDb } from "./db";
 export type SystemSettings = {
   defaultQrLogo: string;
   shortlinkDomain: string;
+  expiredRedirectUrl: string;
   freeLinkLimit: number;
 };
 
 export const DEFAULT_SETTINGS: SystemSettings = {
   defaultQrLogo: "",
   shortlinkDomain: "",
+  expiredRedirectUrl: "",
   freeLinkLimit: 10,
 };
 
@@ -22,6 +24,7 @@ export function getSystemSettings(): SystemSettings {
   return {
     defaultQrLogo: map.default_qr_logo ?? DEFAULT_SETTINGS.defaultQrLogo,
     shortlinkDomain: map.shortlink_domain ?? DEFAULT_SETTINGS.shortlinkDomain,
+    expiredRedirectUrl: map.expired_redirect_url ?? DEFAULT_SETTINGS.expiredRedirectUrl,
     freeLinkLimit: Number(map.free_link_limit) > 0 ? Number(map.free_link_limit) : DEFAULT_SETTINGS.freeLinkLimit,
   };
 }
@@ -29,6 +32,7 @@ export function getSystemSettings(): SystemSettings {
 export function updateSystemSettings(updates: {
   defaultQrLogo?: string | null;
   shortlinkDomain?: string | null;
+  expiredRedirectUrl?: string | null;
   freeLinkLimit?: number | string | null;
 }): SystemSettings {
   const db = getDb();
@@ -47,6 +51,9 @@ export function updateSystemSettings(updates: {
       domain = domain.replace(/\/+$/, "");
       upsert.run("shortlink_domain", domain);
     }
+    if (updates.expiredRedirectUrl !== undefined) {
+      upsert.run("expired_redirect_url", updates.expiredRedirectUrl?.trim() ?? "");
+    }
     if (updates.freeLinkLimit !== undefined) {
       const parsed = Number(updates.freeLinkLimit);
       const limit = Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : DEFAULT_SETTINGS.freeLinkLimit;
@@ -60,7 +67,7 @@ export function updateSystemSettings(updates: {
 
 /**
  * Builds the full short link URL from code and optional custom domain.
- * If domain is not specified, falls back to fallbackOrigin or localhost:3000.
+ * If domain is not specified, falls back to fallbackOrigin or 127.0.0.1:3333.
  */
 export function formatShortUrl(code: string, domainSetting?: string, fallbackOrigin?: string): string {
   const trimmed = domainSetting?.trim();
@@ -71,6 +78,6 @@ export function formatShortUrl(code: string, domainSetting?: string, fallbackOri
     const cleanDomain = trimmed.replace(/\/+$/, "");
     return `${protocol}${cleanDomain}/${code}`;
   }
-  const origin = fallbackOrigin || (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000");
+  const origin = fallbackOrigin || (typeof window !== "undefined" ? window.location.origin : "http://127.0.0.1:3333");
   return `${origin.replace(/\/+$/, "")}/${code}`;
 }

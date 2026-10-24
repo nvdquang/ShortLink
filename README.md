@@ -6,7 +6,7 @@
 npm install
 npm run dev
 ```
-Mở `http://localhost:3000`. Dùng `npm run build && npm start` để chạy production. Node API dùng `better-sqlite3` và `schema.sql`; mặc định DB ở `shortlink.db` trong thư mục dự án. Có thể đặt `SHORTLINK_DB_PATH=/path/to/shortlink.db`.
+Mở `http://127.0.0.1:3333`. ShortLink giúp rút gọn link, tạo mã QR tùy chỉnh và theo dõi lượt nhấp trên cùng một nền tảng. Dùng `npm run build && npm start` để chạy production trên cổng `3333`. Node API dùng `better-sqlite3` và `schema.sql`; mặc định DB ở `shortlink.db` trong thư mục dự án. Có thể đặt `SHORTLINK_DB_PATH=/path/to/shortlink.db`.
 
 ## Tài khoản
 - `POST /api/auth/register` — body `{ "email": "you@example.com", "password": "ít nhất 10 ký tự" }`, tạo tài khoản và đăng nhập ngay.
@@ -16,18 +16,21 @@ Mở `http://localhost:3000`. Dùng `npm run build && npm start` để chạy pr
 
 Mật khẩu được hash bằng Node.js `scrypt`; session token ngẫu nhiên được lưu ở dạng SHA-256 hash trong bảng `AuthSessions`, còn cookie phiên là `HttpOnly`, `SameSite=Lax`, 30 ngày (có `Secure` khi production). Tạo link khi đăng nhập sẽ gắn `user_id`; endpoint liệt kê/chỉnh sửa/xóa/analytics chỉ cho chủ sở hữu truy cập. Các link tạo ở chế độ khách vẫn là link công khai không gắn user.
 
+Gói Plus có hiệu lực trong một năm kể từ lúc quản trị viên xác nhận nâng cấp. Khi hết hạn, tài khoản tự chuyển về Free ở lần xác thực/request tiếp theo; ngày nâng cấp và hạn nâng cấp được hiển thị trong danh sách quản trị người dùng.
+
 ## API
-- `POST /api/links` — tạo link. JSON: `{"originalUrl":"https://example.com/page","customAlias":"my-page","title":"Optional","expiresAt":"2027-01-01T00:00:00Z","qrConfig":{"color":"#176b55"}}`. `customAlias`, `title`, `expiresAt`, `qrConfig` là tùy chọn. Trả `201` với `link` và `shortUrl`.
+- `POST /api/links` — tạo link. JSON: `{"originalUrl":"https://example.com/page","customAlias":"my-page","title":"Optional","expiresAt":"2027-01-01T00:00:00Z","expiredUrl":"https://example.com/link-expired","qrConfig":{"color":"#176b55"}}`. `customAlias`, `title`, `expiresAt`, `expiredUrl`, `qrConfig` là tùy chọn. Khi link hết hạn, người truy cập được chuyển tới `expiredUrl`; nếu bỏ trống, họ được chuyển về trang chủ.
 - `GET /api/links?limit=20` — danh sách link gần đây.
 - `GET /api/links/:code` — chi tiết link.
-- `PATCH /api/links/:code` — cập nhật `title`, `expiresAt`, `isActive`, `qrConfig`.
+- `PATCH /api/links/:code` — cập nhật `title`, `expiresAt`, `expiredUrl`, `isActive`, `qrConfig`.
 - `DELETE /api/links/:code` — xóa link và Analytics tương ứng.
 - `GET /api/links/:code/analytics` — tổng hợp click theo ngày, thiết bị, referer, cùng lượt click gần nhất.
-- `GET /:code` — ghi Analytics và redirect `307` tới URL gốc; link hết hạn/vô hiệu hóa/không tồn tại không redirect và trả trang `404`.
+- `GET /:code` — ghi Analytics và redirect `307` tới URL gốc. Khi link hết hạn, `expiredUrl` riêng của link được ưu tiên; nếu không có, URL hết hạn do quản trị viên cấu hình được ghi vào `expired_url` khi link được mở. Nếu cả hai đều không có, người dùng được chuyển về trang chủ.
+- Quản trị viên cấu hình URL fallback cho link hết hạn trong **System Configuration**. Chỉ quản trị viên được cập nhật cài đặt này; URL phải dùng giao thức HTTP hoặc HTTPS.
 
 Ví dụ tạo link:
 ```bash
-curl -X POST http://localhost:3000/api/links \\
+curl -X POST http://127.0.0.1:3333/api/links \\
   -H 'content-type: application/json' \\
   -d '{"originalUrl":"https://example.com/page","customAlias":"my-page"}'
 ```

@@ -8,6 +8,7 @@ export type LinkRecord = {
   qr_config: string | null;
   click_count: number;
   expires_at: string | null;
+  expired_url: string | null;
   is_active: number;
   user_id: string | null;
   created_at: string;
@@ -38,6 +39,7 @@ export type AnalyticsResponse = {
 export type SystemSettings = {
   defaultQrLogo: string;
   shortlinkDomain: string;
+  expiredRedirectUrl: string;
   freeLinkLimit: number;
 };
 
@@ -51,7 +53,7 @@ export function shortUrlFor(code: string, customDomainSetting?: string): string 
     const cleanDomain = trimmed.replace(/\/+$/, "");
     return `${protocol}${cleanDomain}/${code}`;
   }
-  const origin = typeof window === "undefined" ? "http://localhost:3000" : window.location.origin;
+  const origin = typeof window === "undefined" ? "http://127.0.0.1:3333" : window.location.origin;
   return `${origin.replace(/\/+$/, "")}/${code}`;
 }
 
@@ -72,6 +74,7 @@ export type CreateLinkPayload = {
   customAlias?: string | null;
   title?: string | null;
   expiresAt?: string | null;
+  expiredUrl?: string | null;
   qrConfig?: unknown;
 };
 
@@ -90,7 +93,7 @@ export function fetchAnalytics(code: string, limit = 20) {
   return request<AnalyticsResponse>(`/api/links/${encodeURIComponent(code)}/analytics?limit=${limit}`);
 }
 
-export type AuthUser = { id: string; email: string; role: string; plan?: string; linkLimit?: number | null; created_at: string };
+export type AuthUser = { id: string; email: string; role: string; plan?: string; linkLimit?: number | null; plusExpiresAt?: string | null; created_at: string };
 
 export function fetchCurrentUser() {
   return request<{ user: AuthUser | null }>("/api/auth/me");
@@ -140,6 +143,7 @@ export type AdminUser = {
   linkLimit: number | null;
   linkCount: number;
   plusUpgradedAt: string | null;
+  plusExpiresAt: string | null;
   created_at: string;
 };
 
