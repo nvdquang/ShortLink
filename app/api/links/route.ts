@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSessionToken, getUserForSession } from "@/lib/auth";
 import { createLink, listLinks } from "@/lib/links";
+import { getDb } from "@/lib/db";
 import { getSystemSettings, formatShortUrl } from "@/lib/settings";
 import { asString, errorResponse, readJsonBody } from "@/lib/http";
 
@@ -44,7 +45,22 @@ export async function GET(request: Request) {
     const limit = Number(new URL(request.url).searchParams.get("limit") ?? 20);
     const user = getUserForSession(getSessionToken(request));
     const links = listLinks(Number.isFinite(limit) ? limit : 20, user?.id ?? null).map((link) => ({ ...link, click_count: Number(link.click_count), is_active: Boolean(link.is_active) }));
-    return NextResponse.json({ links });
+    const count = user
+      ? Number((getDb().prepare("SELECT COUNT(*) AS count FROM Links WHERE user_id = ?").get(user.id) as { count: number }).count)
+      : 0;
+    const settings = getSystemSettings();
+    const userBonus = user
+      ? Number((getDb().prepare("SELECT link_bonus FROM Users WHERE id = ?").get(user.id) as { link_bonus: number }).link_bonus)
+      : 0;
+    const linkLimit = !user || user.role === "admin" || user.plan === "plus"
+      ? null
+      : (user.linkLimit ?? settings.freeLinkLimit) + userBonus;
+    const usage = {
+      count,
+      limit: linkLimit,
+      canCreate: linkLimit === null || count < linkLimit,
+    };
+    return NextResponse.json({ links, usage });
   } catch (error) {
     return errorResponse(error);
   }

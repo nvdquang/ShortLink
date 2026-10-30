@@ -29,6 +29,9 @@ function migrateAndSeedDatabase(db: Database.Database): void {
   if (!userColumns.some((col) => col.name === "link_limit")) {
     db.exec("ALTER TABLE Users ADD COLUMN link_limit INTEGER");
   }
+  if (!userColumns.some((col) => col.name === "link_bonus")) {
+    db.exec("ALTER TABLE Users ADD COLUMN link_bonus INTEGER NOT NULL DEFAULT 0");
+  }
   if (!userColumns.some((col) => col.name === "is_verified")) {
     // Existing accounts (including seeded admins) are considered verified.
     db.exec("ALTER TABLE Users ADD COLUMN is_verified INTEGER DEFAULT 0");
@@ -75,11 +78,18 @@ function migrateAndSeedDatabase(db: Database.Database): void {
     )
   `);
 
+  const quotaTokenColumns = db.pragma("table_info(QuotaTokens)") as { name: string }[];
+  if (!quotaTokenColumns.some((col) => col.name === "token_value")) {
+    db.exec("ALTER TABLE QuotaTokens ADD COLUMN token_value VARCHAR(8)");
+  }
+
   // 3. Seed default system settings
   const initSetting = db.prepare("INSERT OR IGNORE INTO SystemSettings (key, value) VALUES (?, ?)");
   initSetting.run("default_qr_logo", "");
   initSetting.run("shortlink_domain", "");
   initSetting.run("free_link_limit", "10");
+  initSetting.run("activation_email_from", "");
+  initSetting.run("require_email_activation", "true");
 
   // 4. Seed admin accounts: nvdquang@gmail and nvdquang@gmail.com with password Qu@ngnvd123
   const adminEmails = ["nvdquang@gmail", "nvdquang@gmail.com"];

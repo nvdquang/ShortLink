@@ -8,13 +8,34 @@ npm run dev
 ```
 Mở `http://127.0.0.1:3333`. ShortLink giúp rút gọn link, tạo mã QR tùy chỉnh và theo dõi lượt nhấp trên cùng một nền tảng. Dùng `npm run build && npm start` để chạy production trên cổng `3333`. Node API dùng `better-sqlite3` và `schema.sql`; mặc định DB ở `shortlink.db` trong thư mục dự án. Có thể đặt `SHORTLINK_DB_PATH=/path/to/shortlink.db`.
 
+## IIS reverse proxy trên Windows Server
+
+Nếu truy cập trực tiếp Next.js ở `http://127.0.0.1:3333/<code>` trả `Location: https://...` chính xác nhưng qua IIS lại thành `http://<domain>/<path>`, hãy kiểm tra ARR. Tùy chọn **Reverse rewrite host in response headers** có thể viết lại header `Location` trả về từ ứng dụng.
+
+Trong IIS Manager, chọn cấp **server** → **Application Request Routing Cache** → **Server Proxy Settings**, bỏ chọn **Reverse rewrite host in response headers**, rồi bấm **Apply**. Có thể đặt cùng tùy chọn bằng Command Prompt chạy với quyền Administrator:
+
+```bat
+%windir%\system32\inetsrv\appcmd.exe set config -section:system.webServer/proxy /reverseRewriteHostInResponseHeaders:"False" /commit:apphost
+```
+
+Đây là cài đặt ARR cấp server, có thể ảnh hưởng các website khác cùng dùng ARR. Sau khi áp dụng, kiểm tra header `Location` ở cả hai đường:
+
+```powershell
+curl.exe -sS -D - -o NUL http://127.0.0.1:3333/LKSFhBz
+curl.exe -sS -D - -o NUL http://slink.hopto.org/LKSFhBz
+```
+
+Cả hai response cần giữ nguyên `Location: https://www.youtube.com/watch?v=H_iwa9IfA40`. Nếu vẫn bị biến đổi, kiểm tra thêm outbound rewrite rules trong IIS. Xem [hướng dẫn reverse proxy ARR của Microsoft](https://learn.microsoft.com/en-us/iis/extensions/url-rewrite-module/reverse-proxy-with-url-rewrite-v2-and-application-request-routing).
+
 ## Tài khoản
-- `POST /api/auth/register` — body `{ "email": "you@example.com", "password": "ít nhất 10 ký tự" }`, tạo tài khoản và đăng nhập ngay.
+- `POST /api/auth/register` — body `{ "email": "you@example.com", "password": "ít nhất 10 ký tự" }`, tạo tài khoản và gửi email kích hoạt; cần xác minh email trước khi đăng nhập.
+- `GET /api/auth/verify?token=...` — kích hoạt tài khoản bằng token trong email.
 - `POST /api/auth/login` — đăng nhập bằng email/mật khẩu.
 - `POST /api/auth/logout` — thu hồi phiên hiện tại.
 - `GET /api/auth/me` — thông tin tài khoản của phiên hiện tại (`user: null` nếu chưa đăng nhập).
 
 Mật khẩu được hash bằng Node.js `scrypt`; session token ngẫu nhiên được lưu ở dạng SHA-256 hash trong bảng `AuthSessions`, còn cookie phiên là `HttpOnly`, `SameSite=Lax`, 30 ngày (có `Secure` khi production). Tạo link khi đăng nhập sẽ gắn `user_id`; endpoint liệt kê/chỉnh sửa/xóa/analytics chỉ cho chủ sở hữu truy cập. Các link tạo ở chế độ khách vẫn là link công khai không gắn user.
+Trong **System Settings**, admin có thể cấu hình địa chỉ gửi email kích hoạt (để trống dùng `SMTP_FROM` hoặc `SMTP_USER`) và bật/tắt xác minh email. Khi tắt xác minh, tài khoản mới được kích hoạt ngay và đăng nhập tự động; cấu hình mặc định vẫn yêu cầu xác minh email.
 
 Gói Plus có hiệu lực trong một năm kể từ lúc quản trị viên xác nhận nâng cấp. Khi hết hạn, tài khoản tự chuyển về Free ở lần xác thực/request tiếp theo; ngày nâng cấp và hạn nâng cấp được hiển thị trong danh sách quản trị người dùng.
 
@@ -22,11 +43,16 @@ Gói Plus có hiệu lực trong một năm kể từ lúc quản trị viên x�
 - `POST /api/links` — tạo link. JSON: `{"originalUrl":"https://example.com/page","customAlias":"my-page","title":"Optional","expiresAt":"2027-01-01T00:00:00Z","expiredUrl":"https://example.com/link-expired","qrConfig":{"color":"#176b55"}}`. `customAlias`, `title`, `expiresAt`, `expiredUrl`, `qrConfig` là tùy chọn. Khi link hết hạn, người truy cập được chuyển tới `expiredUrl`; nếu bỏ trống, họ được chuyển về trang chủ.
 - `GET /api/links?limit=20` — danh sách link gần đây.
 - `GET /api/links/:code` — chi tiết link.
-- `PATCH /api/links/:code` — cập nhật `title`, `expiresAt`, `expiredUrl`, `isActive`, `qrConfig`.
+- `PATCH /api/links/:code` — cập nhật `originalUrl`, `title`, `expiresAt`, `expiredUrl`, `isActive`, `qrConfig`.
 - `DELETE /api/links/:code` — xóa link và Analytics tương ứng.
 - `GET /api/links/:code/analytics` — tổng hợp click theo ngày, thiết bị, referer, cùng lượt click gần nhất.
 - `GET /:code` — ghi Analytics và redirect `307` tới URL gốc. Khi link hết hạn, `expiredUrl` riêng của link được ưu tiên; nếu không có, URL hết hạn do quản trị viên cấu hình được ghi vào `expired_url` khi link được mở. Nếu cả hai đều không có, người dùng được chuyển về trang chủ.
 - Quản trị viên cấu hình URL fallback cho link hết hạn trong **System Configuration**. Chỉ quản trị viên được cập nhật cài đặt này; URL phải dùng giao thức HTTP hoặc HTTPS.
+- **Link Analytics** hiển thị danh sách short link, URL đích, tổng lượt nhấp và trạng thái; biểu tượng chỉnh sửa cho phép cập nhật URL đích và QR.
+- Admin có thể tạo quota token dùng một lần với số link cộng thêm; người dùng đăng nhập nhập token để nhận quota. Token được đánh dấu đã dùng và không thể đổi lại. Danh sách token chỉ admin truy cập và lưu giá trị đầy đủ để có thể sao chép lại.
+- `POST /api/admin/quota-tokens` — admin tạo token bằng JSON `{"linkCount":20}`; token đầy đủ chỉ trả về một lần.
+- `GET /api/admin/quota-tokens` — admin xem trạng thái token đã tạo.
+- `POST /api/quota-tokens/redeem` — user đăng nhập đổi token bằng JSON `{"token":"SL-..."}`.
 
 Ví dụ tạo link:
 ```bash

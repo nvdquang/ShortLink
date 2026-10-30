@@ -42,11 +42,30 @@ export async function PATCH(request: Request) {
         expiredRedirectUrl = "";
       }
     }
+    let activationEmailFrom: string | undefined;
+    if (body.activationEmailFrom !== undefined) {
+      if (typeof body.activationEmailFrom !== "string") {
+        return NextResponse.json({ error: "Activation sender email must be a string." }, { status: 400 });
+      }
+      activationEmailFrom = body.activationEmailFrom.trim();
+      if (activationEmailFrom && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(activationEmailFrom)) {
+        return NextResponse.json({ error: "Enter a valid activation sender email address." }, { status: 400 });
+      }
+    }
+    let requireEmailActivation: boolean | undefined;
+    if (body.requireEmailActivation !== undefined) {
+      if (typeof body.requireEmailActivation !== "boolean") {
+        return NextResponse.json({ error: "Email activation setting must be true or false." }, { status: 400 });
+      }
+      requireEmailActivation = body.requireEmailActivation;
+    }
     const updated = updateSystemSettings({
       defaultQrLogo: typeof body.defaultQrLogo === "string" ? body.defaultQrLogo : undefined,
       shortlinkDomain: typeof body.shortlinkDomain === "string" ? body.shortlinkDomain : undefined,
       expiredRedirectUrl,
       freeLinkLimit: body.freeLinkLimit !== undefined ? Number(body.freeLinkLimit) : undefined,
+      activationEmailFrom,
+      requireEmailActivation,
     });
 
     return NextResponse.json({ settings: updated });

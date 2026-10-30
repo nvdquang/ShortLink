@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS Users (
     role VARCHAR(20) DEFAULT 'user',
     plan VARCHAR(10) DEFAULT 'free',
     link_limit INTEGER,
+    link_bonus INTEGER NOT NULL DEFAULT 0,
     is_verified INTEGER DEFAULT 0,
     plus_upgraded_at TIMESTAMP NULL,
     plus_expires_at TIMESTAMP NULL,
@@ -72,3 +73,19 @@ CREATE TABLE IF NOT EXISTS SystemSettings (
     value TEXT NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS QuotaTokens (
+    id VARCHAR(36) PRIMARY KEY,
+    token_hash VARCHAR(64) UNIQUE NOT NULL,
+    token_hint VARCHAR(8) NOT NULL,
+    token_value VARCHAR(8),
+    link_count INTEGER NOT NULL,
+    used_by VARCHAR(36),
+    used_at TIMESTAMP NULL,
+    created_by VARCHAR(36) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (used_by) REFERENCES Users(id) ON DELETE SET NULL,
+    FOREIGN KEY (created_by) REFERENCES Users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_quota_tokens_used_at ON QuotaTokens(used_at);

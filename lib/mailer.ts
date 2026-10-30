@@ -1,4 +1,5 @@
 import nodemailer, { type Transporter } from "nodemailer";
+import { getSystemSettings } from "./settings";
 
 /**
  * Sends transactional emails via SMTP.
@@ -46,7 +47,7 @@ async function send(to: string, subject: string, html: string): Promise<void> {
     return;
   }
   await t.sendMail({
-    from: process.env.SMTP_FROM ?? process.env.SMTP_USER,
+    from: getSystemSettings().activationEmailFrom || process.env.SMTP_FROM || process.env.SMTP_USER,
     to,
     subject,
     html,

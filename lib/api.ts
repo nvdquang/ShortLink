@@ -41,6 +41,8 @@ export type SystemSettings = {
   shortlinkDomain: string;
   expiredRedirectUrl: string;
   freeLinkLimit: number;
+  activationEmailFrom: string;
+  requireEmailActivation: boolean;
 };
 
 /** Builds the public short URL from a code, with optional custom domain setting. */
@@ -78,6 +80,22 @@ export type CreateLinkPayload = {
   qrConfig?: unknown;
 };
 
+export type LinkUsage = {
+  count: number;
+  limit: number | null;
+  canCreate: boolean;
+};
+
+export type QuotaTokenRecord = {
+  id: string;
+  token_hint: string;
+  token_value: string | null;
+  link_count: number;
+  used_at: string | null;
+  used_by_email: string | null;
+  created_at: string;
+};
+
 export function createShortLink(payload: CreateLinkPayload) {
   return request<{ link: LinkRecord; shortUrl: string }>("/api/links", {
     method: "POST",
@@ -86,7 +104,7 @@ export function createShortLink(payload: CreateLinkPayload) {
 }
 
 export function fetchLinks(limit = 20) {
-  return request<{ links: LinkRecord[] }>(`/api/links?limit=${limit}`);
+  return request<{ links: LinkRecord[]; usage: LinkUsage }>(`/api/links?limit=${limit}`);
 }
 
 export function fetchAnalytics(code: string, limit = 20) {
@@ -107,7 +125,7 @@ export function signIn(email: string, password: string) {
 }
 
 export function signUp(email: string, password: string) {
-  return request<{ user: AuthUser }>("/api/auth/register", {
+  return request<{ user: AuthUser; requiresEmailActivation: boolean; message: string }>("/api/auth/register", {
     method: "POST",
     body: JSON.stringify({ email, password }),
   });
@@ -155,5 +173,36 @@ export function updateAdminUser(payload: { userId: string; plan?: "free" | "plus
   return request<{ user: AdminUser }>("/api/admin/users", {
     method: "PATCH",
     body: JSON.stringify(payload),
+  });
+}
+
+export function updateShortLink(code: string, payload: {
+  originalUrl: string;
+  expiresAt: string | null;
+  expiredUrl: string | null;
+  isActive: boolean;
+  qrConfig: unknown;
+}) {
+  return request<{ link: LinkRecord }>(`/api/links/${encodeURIComponent(code)}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function fetchAdminQuotaTokens() {
+  return request<{ tokens: QuotaTokenRecord[] }>("/api/admin/quota-tokens");
+}
+
+export function createAdminQuotaToken(linkCount: number) {
+  return request<{ token: string; linkCount: number }>("/api/admin/quota-tokens", {
+    method: "POST",
+    body: JSON.stringify({ linkCount }),
+  });
+}
+
+export function redeemQuotaToken(token: string) {
+  return request<{ addedLinks: number; linkBonus: number }>("/api/quota-tokens/redeem", {
+    method: "POST",
+    body: JSON.stringify({ token }),
   });
 }

@@ -44,6 +44,26 @@ export class ExpiredLinkError extends ApiError {
   }
 }
 
+export function extractShortCode(input: string): string {
+  let pathname: string;
+  try {
+    pathname = new URL(input).pathname;
+  } catch {
+    pathname = input;
+  }
+
+  const segments = pathname.split("/").filter(Boolean);
+  if (segments.length !== 1) {
+    throw new ApiError(404, "Short link not found.");
+  }
+
+  try {
+    return decodeURIComponent(segments[0]);
+  } catch {
+    throw new ApiError(404, "Short link not found.");
+  }
+}
+
 /** Encodes a random 64-bit value into Base62 (e.g. "aB3x9Qr"). */
 export function generateShortCode(length = DEFAULT_CODE_LENGTH): string {
   const bytes = randomBytes(8);
@@ -159,9 +179,10 @@ export function createLink(input: CreateLinkInput): LinkRecord {
 
   if (userId && maxExpiryDays !== null) {
     const { freeLinkLimit } = getSystemSettings();
-    const db2 = db;
-    const owner = userId ? db2.prepare("SELECT link_limit FROM Users WHERE id = ?").get(userId) as { link_limit: number | null } | undefined : undefined;
-    const effectiveLimit = owner?.link_limit ?? freeLinkLimit;
+    const owner = db.prepare("SELECT link_limit, link_bonus FROM Users WHERE id = ?").get(userId) as
+      | { link_limit: number | null; link_bonus: number }
+      | undefined;
+    const effectiveLimit = (owner?.link_limit ?? freeLinkLimit) + (owner?.link_bonus ?? 0);
     const countRow = db.prepare("SELECT COUNT(*) as count FROM Links WHERE user_id = ?").get(userId) as { count: number };
     if (countRow.count >= effectiveLimit) {
       throw new ApiError(
@@ -216,6 +237,7 @@ export function listLinks(limit = 20, userId?: string | null): LinkRecord[] {
 }
 
 export type UpdateLinkInput = {
+  originalUrl?: string;
   title?: string | null;
   expiresAt?: string | null;
   expiredUrl?: string | null;
@@ -252,6 +274,7 @@ export function updateLink(code: string, input: UpdateLinkInput, userId?: string
   }
 
   const title = input.title === undefined ? existing.title : input.title?.trim().slice(0, MAX_TITLE_LENGTH) || null;
+  const originalUrl = input.originalUrl === undefined ? existing.original_url : normalizeUrl(input.originalUrl);
   const expiredUrl = input.expiredUrl === undefined
     ? existing.expired_url
     : input.expiredUrl === null || input.expiredUrl.trim() === ""
@@ -260,7 +283,8 @@ export function updateLink(code: string, input: UpdateLinkInput, userId?: string
   const isActive = input.isActive === undefined ? existing.is_active : input.isActive ? 1 : 0;
   const qrConfig = input.qrConfig === undefined ? existing.qr_config : input.qrConfig == null ? null : JSON.stringify(input.qrConfig);
 
-  db.prepare("UPDATE Links SET title = ?, expires_at = ?, expired_url = ?, is_active = ?, qr_config = ? WHERE id = ?").run(
+  db.prepare("UPDATE Links SET original_url = ?, title = ?, expires_at = ?, expired_url = ?, is_active = ?, qr_config = ? WHERE id = ?").run(
+    originalUrl,
     title,
     expiresAt,
     expiredUrl,

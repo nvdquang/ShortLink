@@ -5,6 +5,8 @@ export type SystemSettings = {
   shortlinkDomain: string;
   expiredRedirectUrl: string;
   freeLinkLimit: number;
+  activationEmailFrom: string;
+  requireEmailActivation: boolean;
 };
 
 export const DEFAULT_SETTINGS: SystemSettings = {
@@ -12,6 +14,8 @@ export const DEFAULT_SETTINGS: SystemSettings = {
   shortlinkDomain: "",
   expiredRedirectUrl: "",
   freeLinkLimit: 10,
+  activationEmailFrom: "",
+  requireEmailActivation: true,
 };
 
 export function getSystemSettings(): SystemSettings {
@@ -26,6 +30,8 @@ export function getSystemSettings(): SystemSettings {
     shortlinkDomain: map.shortlink_domain ?? DEFAULT_SETTINGS.shortlinkDomain,
     expiredRedirectUrl: map.expired_redirect_url ?? DEFAULT_SETTINGS.expiredRedirectUrl,
     freeLinkLimit: Number(map.free_link_limit) > 0 ? Number(map.free_link_limit) : DEFAULT_SETTINGS.freeLinkLimit,
+    activationEmailFrom: map.activation_email_from ?? DEFAULT_SETTINGS.activationEmailFrom,
+    requireEmailActivation: map.require_email_activation !== "false",
   };
 }
 
@@ -34,6 +40,8 @@ export function updateSystemSettings(updates: {
   shortlinkDomain?: string | null;
   expiredRedirectUrl?: string | null;
   freeLinkLimit?: number | string | null;
+  activationEmailFrom?: string | null;
+  requireEmailActivation?: boolean;
 }): SystemSettings {
   const db = getDb();
   const upsert = db.prepare(`
@@ -58,6 +66,12 @@ export function updateSystemSettings(updates: {
       const parsed = Number(updates.freeLinkLimit);
       const limit = Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : DEFAULT_SETTINGS.freeLinkLimit;
       upsert.run("free_link_limit", String(limit));
+    }
+    if (updates.activationEmailFrom !== undefined) {
+      upsert.run("activation_email_from", updates.activationEmailFrom?.trim() ?? "");
+    }
+    if (updates.requireEmailActivation !== undefined) {
+      upsert.run("require_email_activation", String(updates.requireEmailActivation));
     }
   });
   run();

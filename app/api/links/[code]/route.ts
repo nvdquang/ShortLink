@@ -31,6 +31,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     const user = getUserForSession(getSessionToken(request));
     const body = await readJsonBody(request);
     const link = updateLink(await resolveCode(context), {
+      originalUrl: asString(body.originalUrl),
       title: asString(body.title),
       expiresAt: asString(body.expiresAt),
       expiredUrl: body.expiredUrl === null ? null : asString(body.expiredUrl),

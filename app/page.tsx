@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { Area, AreaChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import {
   Activity,
   ArrowDownToLine,
@@ -11,7 +10,6 @@ import {
   Check,
   ChevronDown,
   Copy,
-  ExternalLink,
   Globe2,
   Link2,
   LockKeyhole,
@@ -20,6 +18,7 @@ import {
   Mail,
   Menu,
   MousePointer2,
+  Pencil,
   QrCode,
   Save,
   Settings2,
@@ -44,20 +43,19 @@ import {
   shortUrlFor,
   updateSystemSettingsApi,
   fetchAdminUsers,
+  fetchAdminQuotaTokens,
+  createAdminQuotaToken,
+  redeemQuotaToken,
   updateAdminUser,
+  updateShortLink,
   type AdminUser,
   type AnalyticsSummary,
   type AuthUser,
   type LinkRecord,
+  type LinkUsage,
+  type QuotaTokenRecord,
   type SystemSettings,
 } from "@/lib/api";
-
-const deviceColors: Record<string, string> = {
-  Mobile: "#0284c7",
-  Desktop: "#d97706",
-  Tablet: "#38bdf8",
-  Unknown: "#94a3b8",
-};
 
 function getFormattedDate(daysFromNow: number): string {
   const d = new Date();
@@ -109,7 +107,7 @@ function createUpgradeVietQr(memo: string): string | null {
 }
 
 export default function Home() {
-  const [view, setView] = useState<"create" | "analytics" | "admin">("create");
+  const [view, setView] = useState<"create" | "analytics" | "admin" | "user-management">("create");
   const [advanced, setAdvanced] = useState(false);
   const [url, setUrl] = useState("");
   const [alias, setAlias] = useState("");
@@ -124,7 +122,9 @@ export default function Home() {
   const [expiry, setExpiry] = useState<string>("");
   const [expiredUrl, setExpiredUrl] = useState("");
   const [links, setLinks] = useState<LinkRecord[]>([]);
+  const [linkUsage, setLinkUsage] = useState<LinkUsage | null>(null);
   const [currentLink, setCurrentLink] = useState<LinkRecord | null>(null);
+  const [copyError, setCopyError] = useState<string | null>(null);
   const [analytics, setAnalytics] = useState<AnalyticsSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -147,11 +147,33 @@ export default function Home() {
   const [adminDomain, setAdminDomain] = useState("");
   const [adminExpiredRedirectUrl, setAdminExpiredRedirectUrl] = useState("");
   const [adminFreeLimit, setAdminFreeLimit] = useState(10);
+  const [adminActivationEmailFrom, setAdminActivationEmailFrom] = useState("");
+  const [adminRequireEmailActivation, setAdminRequireEmailActivation] = useState(true);
   const [adminSaving, setAdminSaving] = useState(false);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [adminUsersLoading, setAdminUsersLoading] = useState(false);
   const [adminUserEmailFilter, setAdminUserEmailFilter] = useState("");
   const [adminAlert, setAdminAlert] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [adminTokens, setAdminTokens] = useState<QuotaTokenRecord[]>([]);
+  const [adminTokensLoading, setAdminTokensLoading] = useState(false);
+  const [adminTokenCreating, setAdminTokenCreating] = useState(false);
+  const [adminTokenCount, setAdminTokenCount] = useState(10);
+  const [revealedToken, setRevealedToken] = useState("");
+  const [tokenInput, setTokenInput] = useState("");
+  const [tokenRedeeming, setTokenRedeeming] = useState(false);
+  const [tokenNotice, setTokenNotice] = useState<string | null>(null);
+  const [tokenError, setTokenError] = useState<string | null>(null);
+  const [editingLink, setEditingLink] = useState<LinkRecord | null>(null);
+  const [editOriginalUrl, setEditOriginalUrl] = useState("");
+  const [editExpiresAt, setEditExpiresAt] = useState("");
+  const [editExpiredUrl, setEditExpiredUrl] = useState("");
+  const [editIsActive, setEditIsActive] = useState(true);
+  const [editQrColor, setEditQrColor] = useState("#0284c7");
+  const [editQrBackground, setEditQrBackground] = useState("#ffffff");
+  const [editQrLogo, setEditQrLogo] = useState("");
+  const [editQrExtras, setEditQrExtras] = useState<Record<string, unknown>>({});
+  const [editError, setEditError] = useState<string | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
 
   const effectiveLogo = logo || systemSettings?.defaultQrLogo || null;
   const configuredDomain = systemSettings?.shortlinkDomain?.trim() || "";
@@ -167,18 +189,6 @@ export default function Home() {
   const shortUrl = currentLink
     ? shortUrlFor(currentLink.short_code, configuredDomain)
     : `${displayDomain}/${alias.trim() || "summer26"}`;
-
-  const clicks = analytics?.byDay.map((row) => ({ day: row.day.slice(5), value: row.clicks })) ?? [];
-  const devices = analytics?.byDevice.map((row) => ({
-    name: row.deviceType,
-    value: analytics.totalClicks ? Math.round((row.clicks / analytics.totalClicks) * 100) : 0,
-    color: deviceColors[row.deviceType] ?? deviceColors.Unknown,
-  })) ?? [];
-  const countries = analytics?.byReferer.map((row) => ({
-    flag: "🌐",
-    name: row.referer,
-    value: analytics.totalClicks ? Math.round((row.clicks / analytics.totalClicks) * 100) : 0,
-  })) ?? [];
 
   useEffect(() => {
     setMounted(true);
@@ -196,6 +206,8 @@ export default function Home() {
         setAdminDomain(settings.shortlinkDomain || "");
         setAdminExpiredRedirectUrl(settings.expiredRedirectUrl || "");
         setAdminFreeLimit(settings.freeLinkLimit || 10);
+        setAdminActivationEmailFrom(settings.activationEmailFrom || "");
+        setAdminRequireEmailActivation(settings.requireEmailActivation);
       })
       .catch(() => undefined);
     return () => {
@@ -205,10 +217,11 @@ export default function Home() {
 
   useEffect(() => {
     let active = true;
-    fetchLinks(10)
-      .then(({ links: rows }) => {
+    fetchLinks(100)
+      .then(({ links: rows, usage }) => {
         if (!active) return;
         setLinks(rows);
+        setLinkUsage(usage);
         setCurrentLink((current) => current ?? rows[0] ?? null);
       })
       .catch(() => undefined);
@@ -216,6 +229,49 @@ export default function Home() {
       active = false;
     };
   }, [user?.id]);
+
+  useEffect(() => {
+    if (user?.role !== "admin") {
+      setAdminTokens([]);
+      return;
+    }
+    let active = true;
+    setAdminTokensLoading(true);
+    fetchAdminQuotaTokens()
+      .then(({ tokens }) => {
+        if (active) setAdminTokens(tokens);
+      })
+      .catch((cause) => {
+        if (active) setAdminAlert({ type: "error", message: cause instanceof Error ? cause.message : "Unable to load quota tokens." });
+      })
+      .finally(() => {
+        if (active) setAdminTokensLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [user?.role]);
+
+  useEffect(() => {
+    if (view !== "user-management" || user?.role !== "admin") return;
+    let active = true;
+    setAdminUsersLoading(true);
+    fetchAdminUsers()
+      .then(({ users }) => {
+        if (active) setAdminUsers(users);
+      })
+      .catch((cause) => {
+        if (active) {
+          setAdminAlert({ type: "error", message: cause instanceof Error ? cause.message : "Unable to load users." });
+        }
+      })
+      .finally(() => {
+        if (active) setAdminUsersLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [view, user?.role]);
 
   // Set default expiry (today + 5 days) only on the client, after mount,
   // so server-rendered HTML and client HTML always match (avoids hydration mismatch).
@@ -248,6 +304,10 @@ export default function Home() {
 
   async function createLink() {
     if (loading) return;
+    if (linkLimitReached) {
+      setError(`You have reached your Free plan limit of ${linkUsage?.limit} links.`);
+      return;
+    }
     if (!url.trim()) {
       setError("Please enter a destination URL.");
       return;
@@ -276,6 +336,13 @@ export default function Home() {
       });
       setCurrentLink(link);
       setLinks((rows) => [link, ...rows.filter((row) => row.id !== link.id)]);
+      setLinkUsage((usage) => usage
+        ? {
+            ...usage,
+            count: usage.count + 1,
+            canCreate: usage.limit === null || usage.count + 1 < usage.limit,
+          }
+        : usage);
       setGenerated(true);
     } catch (cause) {
       setGenerated(false);
@@ -304,19 +371,30 @@ export default function Home() {
       return;
     }
     try {
-      const result = authMode === "login" ? await signIn(authEmail, authPassword) : await signUp(authEmail, authPassword);
       if (authMode === "register") {
-        // Account created but not activated: show the check-your-email notice instead of signing in.
-        setAuthNotice("Account created. We sent an activation link to your email — please verify to sign in.");
-        setAuthMode("login");
+        const result = await signUp(authEmail, authPassword);
+        if (result.requiresEmailActivation) {
+          setAuthNotice(result.message);
+          setAuthMode("login");
+          setAuthPassword("");
+          return;
+        }
+        setUser(result.user);
+        setAuthOpen(false);
         setAuthPassword("");
+        const { links: ownedLinks, usage } = await fetchLinks(100);
+        setLinks(ownedLinks);
+        setLinkUsage(usage);
+        setCurrentLink(ownedLinks[0] ?? null);
         return;
       }
+      const result = await signIn(authEmail, authPassword);
       setUser(result.user);
       setAuthOpen(false);
       setAuthPassword("");
-      const { links: ownedLinks } = await fetchLinks(10);
+      const { links: ownedLinks, usage } = await fetchLinks(100);
       setLinks(ownedLinks);
+      setLinkUsage(usage);
       setCurrentLink(ownedLinks[0] ?? null);
       if (result.user.role === "admin") {
         setView("admin");
@@ -334,17 +412,68 @@ export default function Home() {
     setCurrentLink(null);
     setAnalytics(null);
     setView("create");
-    const { links: publicLinks } = await fetchLinks(10).catch(() => ({ links: [] }));
+    const { links: publicLinks, usage } = await fetchLinks(100).catch(() => ({
+      links: [],
+      usage: { count: 0, limit: null, canCreate: true },
+    }));
     setLinks(publicLinks);
+    setLinkUsage(usage);
+  }
+
+  function copyTextFallback(value: string): boolean {
+    const input = document.createElement("textarea");
+    input.value = value;
+    input.setAttribute("readonly", "");
+    input.style.position = "fixed";
+    input.style.top = "0";
+    input.style.left = "-9999px";
+    input.style.opacity = "0";
+    document.body.appendChild(input);
+    try {
+      input.focus();
+      input.select();
+      input.setSelectionRange(0, input.value.length);
+      return document.execCommand("copy");
+    } finally {
+      input.remove();
+    }
+  }
+
+  async function copyToClipboard(value: string): Promise<void> {
+    if (navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(value);
+        return;
+      } catch {
+        if (copyTextFallback(value)) return;
+        throw new Error("Clipboard copy is unavailable.");
+      }
+    }
+    if (!copyTextFallback(value)) throw new Error("Clipboard copy is unavailable.");
   }
 
   async function copyLink() {
+    setCopied(false);
+    setCopyError(null);
     try {
-      await navigator.clipboard.writeText(shortUrl);
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shortUrl);
+      } else if (!copyTextFallback(shortUrl)) {
+        throw new Error("Clipboard copy is unavailable.");
+      }
       setCopied(true);
+      setCopyError(null);
       window.setTimeout(() => setCopied(false), 1800);
     } catch {
-      setCopied(false);
+      try {
+        if (!copyTextFallback(shortUrl)) throw new Error("Clipboard copy is unavailable.");
+        setCopied(true);
+        setCopyError(null);
+        window.setTimeout(() => setCopied(false), 1800);
+      } catch {
+        setCopied(false);
+        setCopyError("Unable to copy the short link. Please check your browser clipboard permissions.");
+      }
     }
   }
 
@@ -398,14 +527,124 @@ export default function Home() {
         shortlinkDomain: adminDomain,
         expiredRedirectUrl: adminExpiredRedirectUrl,
         freeLinkLimit: adminFreeLimit,
+        activationEmailFrom: adminActivationEmailFrom,
+        requireEmailActivation: adminRequireEmailActivation,
       });
       setSystemSettings(settings);
       setAdminExpiredRedirectUrl(settings.expiredRedirectUrl);
+      setAdminActivationEmailFrom(settings.activationEmailFrom);
+      setAdminRequireEmailActivation(settings.requireEmailActivation);
       setAdminAlert({ type: "success", message: "All system settings saved successfully!" });
     } catch (err) {
       setAdminAlert({ type: "error", message: err instanceof Error ? err.message : "Failed to save settings." });
     } finally {
       setAdminSaving(false);
+    }
+  }
+
+  async function handleCreateQuotaToken() {
+    if (adminTokenCreating) return;
+    setAdminTokenCreating(true);
+    setAdminAlert(null);
+    setRevealedToken("");
+    try {
+      const created = await createAdminQuotaToken(adminTokenCount);
+      setRevealedToken(created.token);
+      const { tokens } = await fetchAdminQuotaTokens();
+      setAdminTokens(tokens);
+      setAdminAlert({ type: "success", message: `Created a one-time token for ${created.linkCount} additional links.` });
+    } catch (cause) {
+      setAdminAlert({ type: "error", message: cause instanceof Error ? cause.message : "Unable to create quota token." });
+    } finally {
+      setAdminTokenCreating(false);
+    }
+  }
+
+  async function handleCopyQuotaToken(token: string) {
+    try {
+      await copyToClipboard(token);
+      setAdminAlert({ type: "success", message: "Quota token copied to clipboard." });
+    } catch {
+      setAdminAlert({ type: "error", message: "Unable to copy the quota token. Please select and copy it manually." });
+    }
+  }
+
+  async function handleRedeemQuotaToken(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (tokenRedeeming) return;
+    setTokenRedeeming(true);
+    setTokenError(null);
+    setTokenNotice(null);
+    try {
+      const result = await redeemQuotaToken(tokenInput);
+      const { links: refreshedLinks, usage } = await fetchLinks(100);
+      setLinks(refreshedLinks);
+      setLinkUsage(usage);
+      setTokenInput("");
+      setTokenNotice(`Token accepted. ${result.addedLinks} links have been added to your quota.`);
+    } catch (cause) {
+      setTokenError(cause instanceof Error ? cause.message : "Unable to redeem quota token.");
+    } finally {
+      setTokenRedeeming(false);
+    }
+  }
+
+  function openLinkEditor(link: LinkRecord) {
+    setEditingLink(link);
+    setCurrentLink(link);
+    setEditOriginalUrl(link.original_url);
+    setEditExpiresAt(link.expires_at ? new Date(link.expires_at).toISOString().slice(0, 10) : "");
+    setEditExpiredUrl(link.expired_url ?? "");
+    setEditIsActive(Boolean(link.is_active));
+    setEditError(null);
+    try {
+      const parsed: unknown = link.qr_config ? JSON.parse(link.qr_config) : {};
+      const config = parsed && typeof parsed === "object" && !Array.isArray(parsed)
+        ? parsed as Record<string, unknown>
+        : {};
+      setEditQrExtras(config);
+      setEditQrColor(typeof config.color === "string" ? config.color : "#0284c7");
+      setEditQrBackground(typeof config.background === "string" ? config.background : "#ffffff");
+      setEditQrLogo(typeof config.logo === "string" ? config.logo : "");
+    } catch {
+      setEditQrExtras({});
+      setEditQrColor("#0284c7");
+      setEditQrBackground("#ffffff");
+      setEditQrLogo("");
+      setEditError("Saved QR settings could not be read; default QR settings are shown.");
+    }
+  }
+
+  async function handleSaveLinkEdit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!editingLink || editSaving) return;
+    setEditSaving(true);
+    setEditError(null);
+    try {
+      const expiresAt = editExpiresAt
+        ? new Date(`${editExpiresAt}T23:59:59`).toISOString()
+        : user?.role === "admin" || user?.plan === "plus"
+          ? null
+          : editingLink.expires_at;
+      const { link } = await updateShortLink(editingLink.short_code, {
+        originalUrl: editOriginalUrl,
+        expiresAt,
+        expiredUrl: editExpiredUrl.trim() || null,
+        isActive: editIsActive,
+        qrConfig: {
+          ...editQrExtras,
+          color: editQrColor,
+          background: editQrBackground,
+          logo: editQrLogo,
+        },
+      });
+      setLinks((current) => current.map((item) => item.id === link.id ? link : item));
+      setCurrentLink(link);
+      setEditingLink(null);
+    } catch (cause) {
+      setEditError(cause instanceof Error ? cause.message : "Unable to update this short link.");
+    } finally {
+      setEditSaving(false);
     }
   }
 
@@ -441,8 +680,10 @@ export default function Home() {
     reader.readAsDataURL(file);
   }
 
-  const freeLimit = systemSettings?.freeLinkLimit ?? 10;
-  const usedPercent = Math.min(100, Math.round((links.length / freeLimit) * 100));
+  const freeLimit = linkUsage?.limit ?? systemSettings?.freeLinkLimit ?? 10;
+  const linkCount = linkUsage?.count ?? links.length;
+  const linkLimitReached = Boolean(user && linkUsage && linkUsage.limit !== null && !linkUsage.canCreate);
+  const usedPercent = Math.min(100, Math.round((linkCount / freeLimit) * 100));
   const upgradeMemo = user ? `Upgrade ${user.email}` : "";
   const upgradeQrPayload = useMemo(() => upgradeMemo ? createUpgradeVietQr(upgradeMemo) : null, [upgradeMemo]);
   const filteredAdminUsers = adminUsers.filter((adminUser) =>
@@ -509,6 +750,20 @@ export default function Home() {
             >
               <Settings2 size={17} /> System Settings
             </button>
+            <button
+              className={`nav-item ${view === "user-management" ? "active" : ""}`}
+              style={
+                view === "user-management"
+                  ? { background: "var(--gold-pale)", color: "var(--gold-dark)", fontWeight: 700 }
+                  : { color: "var(--gold-dark)" }
+              }
+              onClick={() => {
+                setView("user-management");
+                setMobileNav(false);
+              }}
+            >
+              <Users size={17} /> User Management
+            </button>
           </>
         )}
 
@@ -553,7 +808,7 @@ export default function Home() {
               <div className="plan-track">
                 <i style={{ width: "100%", background: "var(--gold)" }} />
               </div>
-              <p>{links.length} links created (No limit)</p>
+              <p>{linkCount} links created (No limit)</p>
               <button style={{ color: "var(--gold-dark)" }} onClick={() => setView("admin")}>
                 System Settings <ArrowUpRight size={14} />
               </button>
@@ -564,7 +819,7 @@ export default function Home() {
                 <span>Plus plan</span>
                 <span style={{ color: "var(--gold-dark)", fontWeight: 700 }}>★</span>
               </div>
-              <p>{`${links.length} links created — unlimited links & expiry`}</p>
+              <p>{`${linkCount} links created — unlimited links & expiry`}</p>
               <button onClick={() => setAdvanced(true)}>Plus: no expiry limit <ArrowUpRight size={14} /></button>
             </div>
           ) : (
@@ -576,12 +831,30 @@ export default function Home() {
               <div className="plan-track">
                 <i style={{ width: `${user ? usedPercent : 0}%` }} />
               </div>
-              <p>{user ? `${links.length} / ${freeLimit} links used` : "Sign in to save links"}</p>
+              <p>{user ? `${linkCount} / ${freeLimit} links used` : "Sign in to save links"}</p>
               <button
                 onClick={() => (user ? setUpgradeOpen(true) : (setAuthMode("register"), setAuthOpen(true)))}
               >
                 {user ? `Free limit: ${freeLimit} links` : "Create account"} <ArrowUpRight size={14} />
               </button>
+              {user && user.plan !== "plus" && (
+                <form className="quota-redeem-form" onSubmit={handleRedeemQuotaToken}>
+                  <label htmlFor="quota-token-input">Have a quota token?</label>
+                  <input
+                    id="quota-token-input"
+                    value={tokenInput}
+                    onChange={(event) => setTokenInput(event.target.value)}
+                    placeholder="Enter token"
+                    autoComplete="off"
+                    required
+                  />
+                  <button type="submit" disabled={tokenRedeeming || !tokenInput.trim()}>
+                    {tokenRedeeming ? "Redeeming..." : "Redeem Token"}
+                  </button>
+                  {tokenError && <span className="quota-token-error" role="alert">{tokenError}</span>}
+                  {tokenNotice && <span className="quota-token-notice" role="status">{tokenNotice}</span>}
+                </form>
+              )}
             </div>
           )}
 
@@ -625,7 +898,13 @@ export default function Home() {
           <div className="breadcrumb">
             Workspace <span>/</span>{" "}
             <b>
-              {view === "create" ? "Create Link" : view === "analytics" ? "Analytics" : "System Settings (Admin)"}
+              {view === "create"
+                ? "Create Link"
+                : view === "analytics"
+                  ? "Analytics"
+                  : view === "user-management"
+                    ? "User Management (Admin)"
+                    : "System Settings (Admin)"}
             </b>
           </div>
           <div className="top-actions">
@@ -642,14 +921,16 @@ export default function Home() {
               {user ? "Sign Out" : "Sign In"}
             </button>
             <button
-              className="top-avatar"
+              className={`top-avatar${user ? "" : " register-avatar"}`}
               style={user?.role === "admin" ? { background: "var(--gold-pale)", color: "var(--gold-dark)" } : {}}
               onClick={() => (user ? undefined : (setAuthMode("register"), setAuthOpen(true)))}
             >
-              {user ? user.email.slice(0, 2).toUpperCase() : "AN"}
+              {user ? user.email.slice(0, 2).toUpperCase() : "Register"}
             </button>
           </div>
         </header>
+
+        {copyError && <p className="copy-error" role="alert">{copyError}</p>}
 
         {view === "create" && (
           <div className="content create-content">
@@ -905,11 +1186,17 @@ export default function Home() {
                   <span>
                     <LockKeyhole size={14} /> Your short links are encrypted and secured
                   </span>
-                  <button className="primary-button" onClick={createLink} disabled={loading}>
-                    <Sparkles size={16} /> {loading ? "Generating..." : "Shorten & Generate QR"}{" "}
+                  <button className="primary-button" onClick={createLink} disabled={loading || linkLimitReached}>
+                    <Sparkles size={16} /> {loading ? "Generating..." : linkLimitReached ? "Link Limit Reached" : "Shorten & Generate QR"}{" "}
                     <span className="button-arrow">↗</span>
                   </button>
                 </div>
+
+                {linkLimitReached && (
+                  <p className="result-error" role="status">
+                    You have reached your Free plan limit of {linkUsage?.limit} links. Upgrade your plan to create more links.
+                  </p>
+                )}
 
                 {error && (
                   <p
@@ -991,7 +1278,7 @@ export default function Home() {
                   </div>
                   <div className="qr-preview-url">
                     <span>{generated ? shortUrl : url || "Enter a URL to preview QR code"}</span>
-                    <button title="Copy link" onClick={copyLink}>
+                    <button title="Copy short link" onClick={copyLink} disabled={!generated && !currentLink}>
                       {copied ? <Check size={15} /> : <Copy size={15} />}
                     </button>
                   </div>
@@ -1037,22 +1324,6 @@ export default function Home() {
                 <p>Track visitor engagement and performance metrics in real time.</p>
               </div>
               <div className="analytics-actions">
-                <select
-                  aria-label="Select short link"
-                  value={currentLink?.short_code ?? ""}
-                  onChange={(event) =>
-                    setCurrentLink(links.find((link) => link.short_code === event.target.value) ?? null)
-                  }
-                >
-                  <option value="" disabled>
-                    Select a link
-                  </option>
-                  {links.map((link) => (
-                    <option key={link.id} value={link.short_code}>
-                      {link.title ?? link.short_code}
-                    </option>
-                  ))}
-                </select>
                 <select aria-label="Date range">
                   <option>Last 30 days</option>
                   <option>Last 7 days</option>
@@ -1064,25 +1335,72 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="analytics-linkbar">
-              <div className="analytics-link-icon">
-                <Link2 size={17} />
+            <section className="chart-card analytics-links-card">
+              <div className="chart-heading">
+                <div>
+                  <h2>Short Links</h2>
+                  <p>Manage destination URLs, status, click counts, and QR settings.</p>
+                </div>
               </div>
-              <div>
-                <b>
-                  {currentLink?.title ??
-                    currentLink?.original_url.replace(/^https?:\/\//, "").split("/")[0] ??
-                    "No link selected"}
-                </b>
-                <span>{currentLink?.original_url ?? "Create a link to view performance analytics."}</span>
+              <div className="analytics-links-scroll">
+                <table className="analytics-links-table">
+                  <thead>
+                    <tr>
+                      <th>Num</th>
+                      <th>Short Link</th>
+                      <th>Target URL</th>
+                      <th>Total Clicks</th>
+                      <th>Link Status</th>
+                      <th aria-label="Actions" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {links.map((link, index) => {
+                      const isActive = Boolean(link.is_active) &&
+                        (!link.expires_at || new Date(link.expires_at).getTime() > Date.now());
+                      const shortLink = shortUrlFor(link.short_code, configuredDomain);
+                      return (
+                        <tr key={link.id}>
+                          <td>{index + 1}</td>
+                          <td>
+                            <a href={shortLink} target="_blank" rel="noreferrer" className="analytics-short-link">
+                              {shortLink}
+                            </a>
+                          </td>
+                          <td className="analytics-target-url">
+                            <a href={link.original_url} target="_blank" rel="noreferrer">
+                              {link.original_url}
+                            </a>
+                          </td>
+                          <td>{Number(link.click_count).toLocaleString()}</td>
+                          <td>
+                            <span className={`link-status-badge ${isActive ? "active" : "inactive"}`}>
+                              {isActive ? "Active" : "Deactive"}
+                            </span>
+                          </td>
+                          <td>
+                            <button
+                              className="link-edit-button"
+                              type="button"
+                              title={`Edit ${shortLink} and QR settings`}
+                              aria-label={`Edit ${shortLink} and QR settings`}
+                              onClick={() => openLinkEditor(link)}
+                            >
+                              <Pencil size={15} />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {links.length === 0 && (
+                      <tr>
+                        <td colSpan={6} className="analytics-links-empty">No short links created yet.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
-              <button className="short-chip" onClick={copyLink}>
-                {shortUrl} {copied ? <Check size={13} /> : <Copy size={13} />}
-              </button>
-              <a href="#analytics" className="open-link" title="Open short link">
-                <ExternalLink size={16} />
-              </a>
-            </div>
+            </section>
 
             <div className="metric-grid">
               <article className="metric-card">
@@ -1139,161 +1457,6 @@ export default function Home() {
               </article>
             </div>
 
-            <section className="chart-card click-chart">
-              <div className="chart-heading">
-                <div>
-                  <h2>Clicks Over Time</h2>
-                  <p>
-                    {analytics?.firstClickAt
-                      ? `From ${new Date(analytics.firstClickAt).toLocaleDateString()} to present`
-                      : "No clicks recorded yet"}
-                  </p>
-                </div>
-                <div className="chart-legend">
-                  <span />
-                  <b>Clicks</b>
-                  <select aria-label="Time resolution">
-                    <option>Daily</option>
-                    <option>Weekly</option>
-                  </select>
-                </div>
-              </div>
-              <div className="line-chart">
-                {clicks.length ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={clicks} margin={{ top: 12, right: 4, left: -18, bottom: 0 }}>
-                      <defs>
-                        <linearGradient id="clickFill" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#0284c7" stopOpacity={0.22} />
-                          <stop offset="95%" stopColor="#0284c7" stopOpacity={0.01} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid stroke="#e2e8f0" vertical={false} strokeDasharray="3 4" />
-                      <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: "#64748b", fontSize: 11 }} dy={10} />
-                      <YAxis
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fill: "#64748b", fontSize: 11 }}
-                        ticks={[0, 200, 400, 600, 800, 1000]}
-                      />
-                      <Tooltip contentStyle={{ border: "1px solid #cbd5e1", borderRadius: 6, fontSize: 12 }} />
-                      <Area
-                        type="monotone"
-                        dataKey="value"
-                        name="Clicks"
-                        stroke="#0284c7"
-                        strokeWidth={2.5}
-                        fill="url(#clickFill)"
-                        activeDot={{ r: 5, fill: "#0284c7", stroke: "#fff", strokeWidth: 2 }}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="empty-chart">
-                    {currentLink
-                      ? "No clicks yet. Open the short link to start collecting statistics."
-                      : "Create or select a link to view analytics."}
-                  </div>
-                )}
-              </div>
-            </section>
-
-            <div className="insights-grid">
-              <section className="chart-card device-card">
-                <div className="chart-heading">
-                  <div>
-                    <h2>Visitor Devices</h2>
-                    <p>Distribution by device category</p>
-                  </div>
-                  <button className="more-button" aria-label="More options">
-                    <ChevronDown size={17} />
-                  </button>
-                </div>
-                <div className="device-content">
-                  <div className="donut-wrap">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={devices}
-                          dataKey="value"
-                          nameKey="name"
-                          innerRadius={62}
-                          outerRadius={86}
-                          paddingAngle={3}
-                          stroke="none"
-                        >
-                          {devices.map((entry) => (
-                            <Cell key={entry.name} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                      </PieChart>
-                    </ResponsiveContainer>
-                    <div className="donut-center">
-                      <strong>{(analytics?.totalClicks ?? 0).toLocaleString()}</strong>
-                      <span>TOTAL CLICKS</span>
-                    </div>
-                  </div>
-                  <div className="legend-list">
-                    {devices.map((device) => (
-                      <div className="legend-row" key={device.name}>
-                        <span className="legend-dot" style={{ background: device.color }} />
-                        <span>{device.name}</span>
-                        <b>{device.value}%</b>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </section>
-
-              <section className="chart-card country-card">
-                <div className="chart-heading">
-                  <div>
-                    <h2>Traffic Sources</h2>
-                    <p>Clicks categorized by referrer</p>
-                  </div>
-                  <button className="more-button" aria-label="Open referrer stats">
-                    <ArrowUpRight size={16} />
-                  </button>
-                </div>
-                <div className="traffic-sources-body">
-                  <div className="country-list">
-                    {countries.map((country) => (
-                      <div className="country-row" key={country.name}>
-                        <span className="country-flag">{country.flag}</span>
-                        <span className="country-name">{country.name}</span>
-                        <div className="country-track">
-                          <i style={{ width: `${country.value * 2.1}%` }} />
-                        </div>
-                        <b>{country.value}%</b>
-                      </div>
-                    ))}
-                    {countries.length === 0 && <span className="traffic-empty">No referrer data yet</span>}
-                  </div>
-                  <div className="traffic-qr">
-                    <span>Link QR</span>
-                    {currentLink ? (
-                      <QRCodeSVG value={shortUrl} size={108} level="M" aria-label={`QR code for ${shortUrl}`} />
-                    ) : (
-                      <div className="traffic-qr-empty">Select a link to show its QR code.</div>
-                    )}
-                    {currentLink && <small>/{currentLink.short_code}</small>}
-                  </div>
-                </div>
-                <button
-                  className="all-countries"
-                  onClick={() =>
-                    currentLink &&
-                    fetchAnalytics(currentLink.short_code, 100)
-                      .then((data) => setAnalytics(data.summary))
-                      .catch(() => undefined)
-                  }
-                >
-                  Refresh Analytics <ArrowUpRight size={14} />
-                </button>
-              </section>
-            </div>
-
             <footer className="dashboard-foot">
               <span>
                 <span className="status-dot" /> Data updated just now
@@ -1303,15 +1466,19 @@ export default function Home() {
           </div>
         )}
 
-        {view === "admin" && (
+        {(view === "admin" || view === "user-management") && (
           <div className="content admin-content">
             <div className="page-heading">
               <div>
                 <div className="eyebrow" style={{ color: "var(--gold-dark)" }}>
                   <ShieldCheck size={14} /> SYSTEM ADMINISTRATION
                 </div>
-                <h1>System Configuration</h1>
-                <p>Manage QR codes, shortlink domains, expired-link redirects, and account creation limits.</p>
+                <h1>{view === "admin" ? "System Configuration" : "User Management"}</h1>
+                <p>
+                  {view === "admin"
+                    ? "Manage QR codes, shortlink domains, expired-link redirects, and account creation limits."
+                    : "Manage account plans and link limits, and issue one-time quota tokens."}
+                </p>
               </div>
               <span className="admin-badge" style={{ fontSize: 11, padding: "6px 12px" }}>
                 Account: {user?.email}
@@ -1325,6 +1492,7 @@ export default function Home() {
               </div>
             )}
 
+            {view === "admin" && (
             <form onSubmit={handleSaveAdminSettings}>
               <div className="admin-grid">
                 {/* Setting 1: Default QR Logo */}
@@ -1500,16 +1668,152 @@ export default function Home() {
                     </span>
                   </div>
                 </div>
-              </div>
 
-              {/* Setting 5: User Management (plan & per-user limits) */}
+                <div className="admin-card">
+                  <div className="admin-card-head">
+                    <div className="admin-card-icon blue">
+                      <Mail size={19} />
+                    </div>
+                    <div>
+                      <h2>5. Registration Email</h2>
+                      <p>Choose the sender address and whether new accounts must activate through email.</p>
+                    </div>
+                  </div>
+                  <div className="admin-field">
+                    <label htmlFor="admin-activation-email-from">Activation email sender</label>
+                    <input
+                      id="admin-activation-email-from"
+                      type="email"
+                      placeholder="no-reply@example.com"
+                      value={adminActivationEmailFrom}
+                      onChange={(event) => setAdminActivationEmailFrom(event.target.value)}
+                    />
+                    <span className="admin-field-hint">
+                      Leave blank to use SMTP_FROM (or SMTP_USER) from the server environment.
+                    </span>
+                  </div>
+                  <label className="admin-email-activation-toggle">
+                    <input
+                      type="checkbox"
+                      checked={adminRequireEmailActivation}
+                      onChange={(event) => setAdminRequireEmailActivation(event.target.checked)}
+                    />
+                    <span>
+                      <strong>Require email activation for new accounts</strong>
+                      <small>
+                        {adminRequireEmailActivation
+                          ? "New users must open the activation link before signing in."
+                          : "New users are activated immediately and can sign in without receiving email."}
+                      </small>
+                    </span>
+                  </label>
+                </div>
+              </div>
+              <div className="admin-actions-bar">
+                <div style={{ fontSize: 11, color: "#64748b" }}>
+                  <ShieldCheck size={14} style={{ display: "inline", verticalAlign: "middle", marginRight: 4, color: "var(--gold)" }} />
+                  Settings are saved directly to SQLite and take effect immediately across the entire platform.
+                </div>
+                <button type="submit" className="primary-button" disabled={adminSaving} style={{ padding: "0 20px" }}>
+                  <Save size={16} /> {adminSaving ? "Saving..." : "Save All Settings"}
+                </button>
+              </div>
+            </form>
+            )}
+
+            {view === "user-management" && (
+            <div className="admin-user-management">
+              <section className="admin-card quota-admin-card">
+                <div className="admin-card-head">
+                  <div className="admin-card-icon blue">
+                    <Sparkles size={19} />
+                  </div>
+                  <div>
+                    <h2>One-Time Link Quota Tokens</h2>
+                    <p>Create a token that gives the first user to redeem it extra short-link capacity.</p>
+                  </div>
+                </div>
+                <div className="quota-token-create-row">
+                  <label htmlFor="admin-token-link-count">Additional links</label>
+                  <input
+                    id="admin-token-link-count"
+                    type="number"
+                    min={1}
+                    max={100000}
+                    value={adminTokenCount}
+                    onChange={(event) => setAdminTokenCount(Math.max(1, Number.parseInt(event.target.value, 10) || 1))}
+                  />
+                  <button type="button" className="upload-button" disabled={adminTokenCreating} onClick={handleCreateQuotaToken}>
+                    {adminTokenCreating ? "Creating..." : "Generate Token"}
+                  </button>
+                </div>
+                {revealedToken && (
+                  <div className="revealed-token" role="status">
+                    <code>{revealedToken}</code>
+                    <button
+                      type="button"
+                      className="upload-button"
+                      onClick={() => handleCopyQuotaToken(revealedToken)}
+                    >
+                      <Copy size={13} /> Copy
+                    </button>
+                  </div>
+                )}
+                <div className="quota-token-table-wrap">
+                  <table className="quota-token-table">
+                    <thead>
+                      <tr>
+                        <th>Token</th>
+                        <th>Links</th>
+                        <th>Status</th>
+                        <th>Redeemed by</th>
+                        <th>Created</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {adminTokens.map((token) => (
+                        <tr key={token.id}>
+                          <td>
+                            <span className="quota-token-cell">
+                              <code>{token.token_value ?? `${token.token_hint}…`}</code>
+                              <button
+                                type="button"
+                                className="quota-token-copy-button"
+                                title={token.token_value ? "Copy token" : "This legacy token cannot be copied because its full value was not stored"}
+                                aria-label={`Copy token ${token.token_value ?? token.token_hint}`}
+                                disabled={!token.token_value}
+                                onClick={() => token.token_value && handleCopyQuotaToken(token.token_value)}
+                              >
+                                <Copy size={14} />
+                              </button>
+                            </span>
+                          </td>
+                          <td>{token.link_count}</td>
+                          <td>
+                            <span className={`link-status-badge ${token.used_at ? "inactive" : "active"}`}>
+                              {token.used_at ? "Used" : "Unused"}
+                            </span>
+                          </td>
+                          <td>{token.used_by_email ?? "—"}</td>
+                          <td>{new Date(token.created_at).toLocaleDateString()}</td>
+                        </tr>
+                      ))}
+                      {!adminTokensLoading && adminTokens.length === 0 && (
+                        <tr><td colSpan={5} className="analytics-links-empty">No quota tokens created yet.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                  {adminTokensLoading && <p className="admin-field-hint">Loading tokens…</p>}
+                </div>
+              </section>
+
               <div className="admin-card" style={{ marginTop: 16 }}>
                 <div className="admin-card-head">
                   <div className="admin-card-icon">
                     <Users size={19} />
                   </div>
                   <div>
-                    <h2>5. User Management — Plans & Link Limits</h2>
+                    <h2>Users, Plans & Link Limits</h2>
                     <p>Upgrade a user from Free to Plus (unlimited links & unlimited expiry) or raise their personal link creation limit.</p>
                   </div>
                 </div>
@@ -1641,16 +1945,8 @@ export default function Home() {
                 )}
               </div>
 
-              <div className="admin-actions-bar">
-                <div style={{ fontSize: 11, color: "#64748b" }}>
-                  <ShieldCheck size={14} style={{ display: "inline", verticalAlign: "middle", marginRight: 4, color: "var(--gold)" }} />
-                  Settings are saved directly to SQLite and take effect immediately across the entire platform.
-                </div>
-                <button type="submit" className="primary-button" disabled={adminSaving} style={{ padding: "0 20px" }}>
-                  <Save size={16} /> {adminSaving ? "Saving..." : "Save All Settings"}
-                </button>
-              </div>
-            </form>
+            </div>
+            )}
           </div>
         )}
       </section>
@@ -1787,6 +2083,95 @@ export default function Home() {
             <div className="auth-security">
               <LockKeyhole size={13} /> Passwords hashed with scrypt; secure sessions stored in HttpOnly cookies.
             </div>
+          </section>
+        </div>
+      )}
+
+      {editingLink && (
+        <div
+          className="auth-overlay"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !editSaving) setEditingLink(null);
+          }}
+        >
+          <section className="auth-dialog link-editor-dialog" role="dialog" aria-modal="true" aria-labelledby="link-editor-title">
+            <button className="auth-close icon-button" type="button" aria-label="Close" disabled={editSaving} onClick={() => setEditingLink(null)}>
+              <X size={18} />
+            </button>
+            <div className="auth-mark">
+              <Pencil size={18} />
+            </div>
+            <div className="auth-kicker">LINK SETTINGS</div>
+            <h2 id="link-editor-title">Edit Short Link</h2>
+            <p className="auth-subtitle">
+              {shortUrlFor(editingLink.short_code, configuredDomain)}
+            </p>
+            <form className="link-editor-form" onSubmit={handleSaveLinkEdit}>
+              <label htmlFor="edit-target-url">Target URL</label>
+              <input
+                id="edit-target-url"
+                type="url"
+                required
+                value={editOriginalUrl}
+                onChange={(event) => setEditOriginalUrl(event.target.value)}
+              />
+              <div className="link-editor-fields">
+                <div>
+                  <label htmlFor="edit-expiry">Expiration date</label>
+                  <input
+                    id="edit-expiry"
+                    type="date"
+                    value={editExpiresAt}
+                    onChange={(event) => setEditExpiresAt(event.target.value)}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="edit-expired-url">Redirect URL after expiration</label>
+                  <input
+                    id="edit-expired-url"
+                    type="url"
+                    placeholder="Optional"
+                    value={editExpiredUrl}
+                    onChange={(event) => setEditExpiredUrl(event.target.value)}
+                  />
+                </div>
+              </div>
+              <label className="link-active-toggle">
+                <input type="checkbox" checked={editIsActive} onChange={(event) => setEditIsActive(event.target.checked)} />
+                Link active
+              </label>
+              <div className="link-editor-qr">
+                <div>
+                  <b>QR code preview</b>
+                  <div className="link-editor-qr-preview">
+                    <QRCodeSVG
+                      value={shortUrlFor(editingLink.short_code, configuredDomain)}
+                      size={150}
+                      level="H"
+                      fgColor={editQrColor}
+                      bgColor={editQrBackground}
+                      imageSettings={editQrLogo ? { src: editQrLogo, height: 28, width: 28, excavate: true } : undefined}
+                    />
+                  </div>
+                </div>
+                <div className="link-editor-colors">
+                  <label htmlFor="edit-qr-color">QR color</label>
+                  <input id="edit-qr-color" type="color" value={editQrColor} onChange={(event) => setEditQrColor(event.target.value)} />
+                  <label htmlFor="edit-qr-background">QR background</label>
+                  <input id="edit-qr-background" type="color" value={editQrBackground} onChange={(event) => setEditQrBackground(event.target.value)} />
+                </div>
+              </div>
+              {editError && <p className="auth-error" role="alert">{editError}</p>}
+              <div className="link-editor-actions">
+                <button type="button" className="upload-button" disabled={editSaving} onClick={() => setEditingLink(null)}>
+                  Cancel
+                </button>
+                <button type="submit" className="auth-submit" disabled={editSaving}>
+                  <Save size={15} /> {editSaving ? "Saving..." : "Save Link & QR"}
+                </button>
+              </div>
+            </form>
           </section>
         </div>
       )}

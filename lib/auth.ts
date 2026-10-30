@@ -78,7 +78,7 @@ function issueSession(userId: string): { token: string; user: UserRecord } {
   return { token, user: publicUser(expirePlusPlan(user)) };
 }
 
-export function registerUser(emailInput: string, password: string): { token: string; user: UserRecord } {
+export function registerUser(emailInput: string, password: string, isVerified = false): { token: string; user: UserRecord } {
   const email = emailInput.trim().toLowerCase();
   if (!EMAIL_PATTERN.test(email) || email.length > 255) {
     throw new ApiError(400, "Please enter a valid email address.");
@@ -90,7 +90,12 @@ export function registerUser(emailInput: string, password: string): { token: str
   const existing = db.prepare("SELECT 1 FROM Users WHERE email = ?").get(email);
   if (existing) throw new ApiError(409, "This email is already registered.");
   const id = randomUUID();
-  db.prepare("INSERT INTO Users (id, email, password_hash, role) VALUES (?, ?, ?, 'user')").run(id, email, hashPassword(password));
+  db.prepare("INSERT INTO Users (id, email, password_hash, role, is_verified) VALUES (?, ?, ?, 'user', ?)").run(
+    id,
+    email,
+    hashPassword(password),
+    isVerified ? 1 : 0,
+  );
   return issueSession(id);
 }
 
