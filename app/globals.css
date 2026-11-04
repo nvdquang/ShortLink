@@ -1,23 +1,23 @@
 @import "tailwindcss";
 
 :root {
-  --ink: #0f172a;
-  --muted: #64748b;
-  --line: #e2e8f0;
-  --sky: #0284c7;
-  --sky-dark: #0369a1;
-  --sky-light: #38bdf8;
-  --sky-pale: #e0f2fe;
-  --sky-subtle: #f0f9ff;
-  --canvas: #f8fafc;
+  --ink: #17345f;
+  --muted: #68778c;
+  --line: #dce3ed;
+  --sky: #284f9e;
+  --sky-dark: #1d3f83;
+  --sky-light: #5479ba;
+  --sky-pale: #e9eef8;
+  --sky-subtle: #f4f6fb;
+  --canvas: #f5f7fa;
   --white: #ffffff;
-  --gold: #d97706;
-  --gold-light: #f59e0b;
-  --gold-dark: #b45309;
-  --gold-pale: #fef3c7;
-  --gold-border: #fde68a;
+  --gold: #efbb35;
+  --gold-light: #f5cf62;
+  --gold-dark: #99710a;
+  --gold-pale: #fff8e4;
+  --gold-border: #f1dda5;
   --orange: #ea580c;
-  --blue: #0284c7;
+  --blue: #284f9e;
   --plum: #7c3aed;
 }
 
@@ -30,8 +30,8 @@ html, body {
   min-height: 100%;
   background: var(--canvas);
   color: var(--ink);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  font-size: 14px;
+  font-family: Roboto, "Segoe UI", Arial, sans-serif;
+  font-size: 16px;
 }
 
 button, input, select {
@@ -44,7 +44,7 @@ button {
 }
 
 button:focus-visible, input:focus-visible, select:focus-visible {
-  outline: 2px solid #38bdf8;
+  outline: 2px solid var(--sky-light);
   outline-offset: 2px;
 }
 
@@ -62,7 +62,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border-top: 1px solid var(--line);
   background: #fff;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.5;
   text-align: center;
 }
@@ -96,7 +96,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   gap: 10px;
   margin: 0 9px 42px;
   color: var(--ink);
-  font-size: 19px;
+  font-size: 20px;
   font-weight: 700;
   text-decoration: none;
   letter-spacing: 0;
@@ -107,10 +107,11 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   place-items: center;
   width: 31px;
   height: 31px;
-  background: var(--sky);
+  background: linear-gradient(145deg, var(--sky) 0%, var(--sky-dark) 100%);
   color: white;
   border-radius: 7px;
-  box-shadow: 0 2px 5px rgba(2, 132, 199, 0.3);
+  box-shadow: 0 2px 5px rgba(40, 79, 158, 0.24);
+  border-bottom: 2px solid var(--gold);
 }
 
 .brand-dot {
@@ -118,7 +119,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 
 .workspace-label {
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 1.15px;
   font-weight: 700;
   color: #94a3b8;
@@ -139,7 +140,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   text-align: left;
   border-radius: 5px;
   margin: 2px 0;
-  font-size: 13px;
+  font-size: 14px;
   transition: all 0.15s ease;
 }
 
@@ -215,7 +216,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 
 .recent-copy b {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
@@ -224,7 +225,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 
 .recent-copy small {
-  font-size: 10px;
+  font-size: 11px;
   color: #64748b;
 }
 
@@ -244,7 +245,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .plan-top {
   display: flex;
   justify-content: space-between;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -270,7 +271,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .plan-box p {
   margin: 0;
   color: #64748b;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .plan-box button {
@@ -281,7 +282,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border: 0;
   padding: 12px 0 0;
   color: var(--sky);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -315,7 +316,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .sidebar-empty {
   padding: 11px 9px;
   color: #94a3b8;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.5;
 }
 
@@ -325,7 +326,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   background: var(--sky-pale);
   color: var(--sky-dark);
   font-weight: 700;
-  font-size: 10px;
+  font-size: 11px;
   width: 31px;
   height: 31px;
   border-radius: 50%;
@@ -338,11 +339,11 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 
 .profile b {
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .profile small {
-  font-size: 10px;
+  font-size: 11px;
   color: #64748b;
 }
 
@@ -366,7 +367,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 
 .breadcrumb {
-  font-size: 12px;
+  font-size: 13px;
   color: #64748b;
 }
 
@@ -385,7 +386,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   align-items: center;
   gap: 9px;
   color: #64748b;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .status-dot {
@@ -404,14 +405,14 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border-right: 1px solid var(--line);
   background: none;
   color: #475569;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .top-avatar {
   border: 0;
   width: 27px;
   height: 27px;
-  font-size: 9px;
+  font-size: 10px;
 }
 
 .top-avatar.register-avatar {
@@ -420,14 +421,14 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   height: 29px;
   padding: 0 10px;
   border-radius: 5px;
-  font-size: 11px;
+  font-size: 12px;
   cursor: pointer;
 }
 
 .copy-error {
   margin: 10px 42px 0;
   color: #b91c1c;
-  font-size: 12px;
+  font-size: 13px;
   text-align: right;
 }
 
@@ -441,7 +442,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 
 .quota-redeem-form label {
   color: #475569;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
 }
 
@@ -451,7 +452,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   padding: 7px;
   border: 1px solid var(--line);
   border-radius: 4px;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .quota-redeem-form button {
@@ -460,7 +461,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border-radius: 4px;
   background: var(--sky);
   color: #fff;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
 }
 
@@ -470,7 +471,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 
 .quota-token-error, .quota-token-notice {
-  font-size: 9px;
+  font-size: 10px;
   line-height: 1.4;
 }
 
@@ -499,7 +500,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 9px;
+  font-size: 10px;
   letter-spacing: 1.1px;
   color: var(--sky);
   font-weight: 700;
@@ -513,7 +514,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 
 .page-heading h1 {
-  font-size: 26px;
+  font-size: 27px;
   line-height: 1.2;
   letter-spacing: -0.3px;
   margin: 0 0 7px;
@@ -522,7 +523,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 
 .page-heading p {
-  font-size: 12px;
+  font-size: 13px;
   color: #64748b;
   margin: 0;
 }
@@ -537,7 +538,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   background: #fff;
   border-radius: 5px;
   color: #334155;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   transition: all 0.15s ease;
 }
@@ -581,18 +582,18 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   place-items: center;
   background: var(--sky-pale);
   color: var(--sky);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
 }
 
 .section-heading h2 {
-  font-size: 14px;
+  font-size: 15px;
   margin: 0 0 3px;
   color: var(--ink);
 }
 
 .section-heading p {
-  font-size: 10px;
+  font-size: 11px;
   color: #64748b;
   margin: 0;
 }
@@ -604,14 +605,14 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   background: var(--sky-subtle);
   border: 1px solid var(--sky-pale);
   color: var(--sky);
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.55px;
 }
 
 .input-label {
   display: block;
-  font-size: 10px;
+  font-size: 11px;
   color: #334155;
   font-weight: 600;
   margin: 0 0 7px;
@@ -641,7 +642,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   flex: 1;
   color: var(--ink);
   background: transparent;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .url-input-wrap input::placeholder, .alias-input input::placeholder, .password-wrap input::placeholder {
@@ -655,7 +656,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   background: transparent;
   color: var(--sky);
   font-weight: 600;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .preview-strip {
@@ -678,7 +679,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   color: var(--sky);
   display: grid;
   place-items: center;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
 }
 
@@ -690,7 +691,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 
 .preview-content b {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
@@ -699,7 +700,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 
 .preview-content small {
-  font-size: 9px;
+  font-size: 10px;
   color: #64748b;
   white-space: nowrap;
   overflow: hidden;
@@ -711,7 +712,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   align-items: center;
   gap: 5px;
   color: #64748b;
-  font-size: 8px;
+  font-size: 9px;
   letter-spacing: 0.4px;
 }
 
@@ -752,13 +753,13 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 
 .advanced-copy b {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--ink);
 }
 
 .advanced-copy small {
   color: #64748b;
-  font-size: 9px;
+  font-size: 10px;
 }
 
 .advanced-chevron {
@@ -787,7 +788,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border-radius: 5px;
   background: #fff;
   color: #334155;
-  font-size: 10px;
+  font-size: 11px;
   min-width: 0;
   width: 100%;
 }
@@ -805,13 +806,13 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 
 .alias-input span {
-  font-size: 10px;
+  font-size: 11px;
   color: #64748b;
   white-space: nowrap;
 }
 
 .alias-input input, .password-wrap input {
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .qr-settings {
@@ -824,7 +825,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   display: flex;
   align-items: center;
   gap: 7px;
-  font-size: 10px;
+  font-size: 11px;
   color: var(--ink);
 }
 
@@ -844,7 +845,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   align-items: center;
   justify-content: space-between;
   gap: 6px;
-  font-size: 9px;
+  font-size: 10px;
   color: #475569;
 }
 
@@ -876,7 +877,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   min-width: 86px;
   height: 26px;
   padding: 0 5px;
-  font-size: 9px;
+  font-size: 10px;
 }
 
 .upload-button {
@@ -888,7 +889,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border: 1px solid var(--line);
   border-radius: 4px;
   color: var(--sky-dark);
-  font-size: 9px;
+  font-size: 10px;
   white-space: nowrap;
   background: #fff;
 }
@@ -904,7 +905,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .result-error {
   margin: 8px 0 0;
   color: #dc2626;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .empty-chart {
@@ -914,7 +915,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   padding: 24px;
   text-align: center;
   color: #94a3b8;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.5;
 }
 
@@ -936,7 +937,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   align-items: center;
   gap: 6px;
   color: #64748b;
-  font-size: 9px;
+  font-size: 10px;
 }
 
 .primary-button {
@@ -949,7 +950,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border-radius: 6px;
   background: var(--sky);
   color: white;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   box-shadow: 0 2px 4px rgba(2, 132, 199, 0.28);
   transition: all 0.15s ease;
@@ -961,7 +962,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 
 .button-arrow {
   margin-left: 4px;
-  font-size: 15px;
+  font-size: 16px;
 }
 
 .preview-column {
@@ -986,14 +987,14 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 
 .preview-card-head h3 {
   margin: 0 0 4px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--ink);
 }
 
 .preview-card-head p {
   margin: 0;
   color: #94a3b8;
-  font-size: 9px;
+  font-size: 10px;
 }
 
 .live-indicator {
@@ -1001,7 +1002,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   align-items: center;
   gap: 5px;
   color: var(--sky);
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.5px;
 }
@@ -1041,7 +1042,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   gap: 8px;
   padding: 12px 0;
   color: #64748b;
-  font-size: 9px;
+  font-size: 10px;
 }
 
 .qr-preview-url span {
@@ -1064,7 +1065,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 9px;
+  font-size: 10px;
   color: #64748b;
 }
 
@@ -1082,7 +1083,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border: 1px solid var(--line);
   border-radius: 2px;
   color: var(--sky);
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 700;
   background: var(--sky-subtle);
 }
@@ -1091,7 +1092,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border: 0;
   background: none;
   color: var(--sky);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
 }
 
@@ -1119,13 +1120,13 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .tip-card b {
   display: block;
   margin: 1px 0 5px;
-  font-size: 10px;
+  font-size: 11px;
   color: var(--gold-dark);
 }
 
 .tip-card p {
   margin: 0;
-  font-size: 9px;
+  font-size: 10px;
   line-height: 1.55;
   color: #78350f;
 }
@@ -1136,7 +1137,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   gap: 7px;
   padding: 3px 2px;
   color: #64748b;
-  font-size: 9px;
+  font-size: 10px;
 }
 
 .security-note > svg {
@@ -1180,13 +1181,13 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 
 .result-head h2 {
-  font-size: 12px;
+  font-size: 13px;
   margin: 0 0 3px;
   color: var(--ink);
 }
 
 .result-head p {
-  font-size: 9px;
+  font-size: 10px;
   color: #64748b;
   margin: 0;
 }
@@ -1217,7 +1218,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 
 .result-link > small {
-  font-size: 8px;
+  font-size: 9px;
   color: #64748b;
   letter-spacing: 0.7px;
 }
@@ -1231,7 +1232,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 
 .result-link b {
   color: var(--sky);
-  font-size: 15px;
+  font-size: 16px;
   overflow-wrap: anywhere;
 }
 
@@ -1252,7 +1253,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   display: block;
   margin-top: 5px;
   color: var(--sky-dark);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
 }
 
@@ -1278,7 +1279,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border: 0;
   background: transparent;
   color: var(--sky-dark);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
 }
 
@@ -1303,7 +1304,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border-radius: 5px;
   padding: 0 9px;
   color: #334155;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .export-button {
@@ -1342,14 +1343,14 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   min-width: 760px;
   border-collapse: collapse;
   text-align: left;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .analytics-links-table th, .quota-token-table th {
   padding: 10px 9px;
   border-bottom: 1px solid var(--line);
   color: #64748b;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.4px;
   text-transform: uppercase;
@@ -1392,7 +1393,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   align-items: center;
   padding: 3px 8px;
   border-radius: 999px;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -1459,12 +1460,12 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 
 .analytics-linkbar > div:nth-child(2) b {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--ink);
 }
 
 .analytics-linkbar > div:nth-child(2) span {
-  font-size: 9px;
+  font-size: 10px;
   color: #64748b;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1480,7 +1481,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border-radius: 5px;
   background: #f8fafc;
   color: var(--sky-dark);
-  font-size: 9px;
+  font-size: 10px;
 }
 
 .open-link {
@@ -1509,7 +1510,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   align-items: center;
   justify-content: space-between;
   color: #64748b;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .metric-icon {
@@ -1543,14 +1544,14 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .metric-card > strong {
   display: block;
   margin: 10px 0 9px;
-  font-size: 25px;
+  font-size: 26px;
   letter-spacing: -0.5px;
   font-weight: 700;
   color: var(--ink);
 }
 
 .metric-unit {
-  font-size: 17px;
+  font-size: 18px;
   margin-left: 2px;
 }
 
@@ -1559,7 +1560,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   align-items: center;
   gap: 5px;
   color: #64748b;
-  font-size: 9px;
+  font-size: 10px;
 }
 
 .trend-up {
@@ -1595,13 +1596,13 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 
 .chart-heading h2 {
   margin: 0 0 5px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--ink);
 }
 
 .chart-heading p {
   margin: 0;
-  font-size: 9px;
+  font-size: 10px;
   color: #64748b;
 }
 
@@ -1610,7 +1611,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   align-items: center;
   gap: 6px;
   color: #475569;
-  font-size: 9px;
+  font-size: 10px;
 }
 
 .chart-legend > span {
@@ -1623,7 +1624,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .chart-legend select {
   height: 27px;
   margin-left: 12px;
-  font-size: 9px;
+  font-size: 10px;
 }
 
 .line-chart {
@@ -1679,12 +1680,12 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 
 .donut-center strong {
-  font-size: 20px;
+  font-size: 21px;
   color: var(--ink);
 }
 
 .donut-center span {
-  font-size: 8px;
+  font-size: 9px;
   letter-spacing: 0.6px;
   color: #64748b;
   margin-top: 4px;
@@ -1701,7 +1702,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   grid-template-columns: 8px 1fr auto;
   align-items: center;
   gap: 7px;
-  font-size: 9px;
+  font-size: 10px;
   color: #475569;
 }
 
@@ -1713,7 +1714,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 
 .legend-row b {
   color: var(--ink);
-  font-size: 9px;
+  font-size: 10px;
 }
 
 .country-list {
@@ -1728,12 +1729,12 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   grid-template-columns: 18px minmax(0, 1fr) minmax(28px, 0.8fr) 25px;
   align-items: center;
   gap: 5px;
-  font-size: 9px;
+  font-size: 10px;
 }
 
 .traffic-empty {
   color: #94a3b8;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.5;
 }
 
@@ -1750,7 +1751,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 
 .traffic-qr > span {
   color: #475569;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
 }
 
@@ -1769,7 +1770,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   max-width: 100%;
   overflow: hidden;
   color: var(--sky-dark);
-  font-size: 9px;
+  font-size: 10px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1783,7 +1784,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border: 1px dashed #cbd5e1;
   border-radius: 4px;
   color: #94a3b8;
-  font-size: 9px;
+  font-size: 10px;
   line-height: 1.4;
   text-align: center;
 }
@@ -1795,7 +1796,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 
 .country-flag {
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .country-name {
@@ -1821,7 +1822,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 
 .country-row > b {
   text-align: right;
-  font-size: 9px;
+  font-size: 10px;
   color: var(--ink);
 }
 
@@ -1835,7 +1836,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   width: 100%;
   background: white;
   color: var(--sky);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
 }
 
@@ -1843,7 +1844,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   display: flex;
   justify-content: space-between;
   color: #64748b;
-  font-size: 9px;
+  font-size: 10px;
   padding: 17px 2px 0;
 }
 
@@ -1903,7 +1904,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 
 .upgrade-original-price {
   color: #64748b;
-  font-size: 21px;
+  font-size: 22px;
   font-weight: 700;
   text-decoration: line-through;
 }
@@ -1913,14 +1914,14 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border-radius: 4px;
   background: #fee2e2;
   color: #b91c1c;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
 }
 
 .upgrade-price strong {
   margin-left: auto;
   color: var(--gold-dark);
-  font-size: 21px;
+  font-size: 22px;
   white-space: nowrap;
 }
 
@@ -1958,12 +1959,12 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 
 .upgrade-benefits strong {
   color: var(--ink);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .upgrade-benefits span {
   color: #64748b;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.45;
 }
 
@@ -2007,7 +2008,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .vietqr-logo span {
   display: flex;
   align-items: baseline;
-  font-size: 32px;
+  font-size: 33px;
   font-weight: 800;
   letter-spacing: -1.7px;
   line-height: 1;
@@ -2040,7 +2041,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .upgrade-qr p {
   margin: 0;
   color: #b91c1c;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.5;
   text-align: center;
 }
@@ -2059,12 +2060,12 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 
 .upgrade-payment-details span {
   color: #64748b;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .upgrade-payment-details strong {
   color: var(--ink);
-  font-size: 12px;
+  font-size: 13px;
   overflow-wrap: anywhere;
 }
 
@@ -2074,7 +2075,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border-radius: 5px;
   background: var(--gold-pale);
   color: var(--gold-dark);
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.5;
 }
 
@@ -2111,7 +2112,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 
 .link-editor-form > label, .link-editor-fields label, .link-editor-colors label {
   color: #334155;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
 }
 
@@ -2124,7 +2125,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border-radius: 5px;
   background: #fff;
   color: var(--ink);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .link-editor-fields {
@@ -2167,7 +2168,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 
 .link-editor-qr b {
   color: #334155;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .link-editor-qr-preview {
@@ -2228,14 +2229,14 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .auth-kicker {
   margin-bottom: 8px;
   color: var(--sky);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 1.2px;
 }
 
 .auth-dialog h2 {
   margin: 0 0 7px;
-  font-size: 22px;
+  font-size: 23px;
   letter-spacing: -0.3px;
   color: var(--ink);
 }
@@ -2243,7 +2244,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .auth-subtitle {
   margin: 0;
   color: #64748b;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.5;
 }
 
@@ -2256,7 +2257,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .auth-form label {
   margin-top: 3px;
   color: #334155;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
 }
 
@@ -2267,7 +2268,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border-radius: 5px;
   background: white;
   color: var(--ink);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .auth-form input::placeholder {
@@ -2285,7 +2286,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border-radius: 5px;
   background: var(--sky);
   color: white;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   box-shadow: 0 2px 4px rgba(2, 132, 199, 0.25);
   transition: all 0.15s ease;
@@ -2303,7 +2304,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .auth-error {
   margin: 0;
   color: #dc2626;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.5;
 }
 
@@ -2313,14 +2314,14 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   gap: 5px;
   margin-top: 17px;
   color: #64748b;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .auth-switch button {
   border: 0;
   background: none;
   color: var(--sky);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -2333,7 +2334,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   padding-top: 13px;
   border-top: 1px solid var(--line);
   color: #64748b;
-  font-size: 9px;
+  font-size: 10px;
 }
 
 .auth-security svg {
@@ -2354,7 +2355,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border: 1px solid var(--gold-border);
   padding: 2px 8px;
   border-radius: 4px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -2403,14 +2404,14 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 
 .admin-card-head h2 {
   margin: 0 0 4px;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--ink);
 }
 
 .admin-card-head p {
   margin: 0;
-  font-size: 11px;
+  font-size: 12px;
   color: #64748b;
   line-height: 1.4;
 }
@@ -2422,7 +2423,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 
 .admin-field label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   color: #334155;
 }
@@ -2434,7 +2435,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border-radius: 5px;
   background: #ffffff;
   color: var(--ink);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .admin-field input:focus {
@@ -2444,7 +2445,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 
 .admin-field-hint {
-  font-size: 10px;
+  font-size: 11px;
   color: #64748b;
   line-height: 1.4;
 }
@@ -2471,12 +2472,12 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 
 .admin-email-activation-toggle strong {
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .admin-email-activation-toggle small {
   color: #64748b;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.4;
 }
 
@@ -2493,7 +2494,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 
 .quota-token-create-row label {
   color: #334155;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -2503,7 +2504,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   padding: 0 8px;
   border: 1px solid var(--line);
   border-radius: 5px;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .revealed-token {
@@ -2517,7 +2518,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border-radius: 5px;
   background: #f0fdf4;
   color: #166534;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .revealed-token code {
@@ -2525,7 +2526,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border-radius: 4px;
   background: #fff;
   color: #14532d;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   overflow-wrap: anywhere;
 }
@@ -2544,7 +2545,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 
 .quota-token-cell code {
   color: #0f172a;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.3px;
   white-space: nowrap;
@@ -2630,7 +2631,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border: 1px solid #bae6fd;
   color: var(--sky-dark);
   border-radius: 6px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   margin-bottom: 16px;
 }
@@ -2644,7 +2645,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border: 1px solid #fecaca;
   color: #dc2626;
   border-radius: 6px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   margin-bottom: 16px;
 }
@@ -2668,7 +2669,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
     padding-top: 43px;
   }
   .analytics-content .page-heading h1, .page-heading h1 {
-    font-size: 28px;
+    font-size: 29px;
   }
   .line-chart {
     height: 265px;
@@ -2706,7 +2707,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
     padding: 13px;
   }
   .metric-card > strong {
-    font-size: 22px;
+    font-size: 23px;
   }
 }
 
@@ -2766,7 +2767,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
     display: flex;
     align-items: center;
     flex: 1;
-    font-size: 11px;
+    font-size: 12px;
   }
   .top-actions {
     gap: 7px;
@@ -2783,10 +2784,10 @@ button:focus-visible, input:focus-visible, select:focus-visible {
     margin-bottom: 20px;
   }
   .page-heading h1 {
-    font-size: 23px;
+    font-size: 24px;
   }
   .page-heading p {
-    font-size: 11px;
+    font-size: 12px;
     line-height: 1.5;
     max-width: 320px;
   }
@@ -2827,7 +2828,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   .security-note {
     align-self: center;
     flex-wrap: wrap;
-    font-size: 8px;
+    font-size: 9px;
   }
   .analytics-content .page-heading {
     display: block;
@@ -2871,14 +2872,14 @@ button:focus-visible, input:focus-visible, select:focus-visible {
     padding: 12px;
   }
   .metric-top {
-    font-size: 9px;
+    font-size: 10px;
   }
   .metric-card > strong {
-    font-size: 22px;
+    font-size: 23px;
     margin: 8px 0;
   }
   .metric-foot {
-    font-size: 8px;
+    font-size: 9px;
     gap: 3px;
   }
   .chart-card {
@@ -2898,7 +2899,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
     height: 155px;
   }
   .dashboard-foot {
-    font-size: 8px;
+    font-size: 9px;
     gap: 12px;
   }
   .dashboard-foot span:last-child {
@@ -2927,17 +2928,17 @@ button:focus-visible, input:focus-visible, select:focus-visible {
     margin-left: 0;
   }
   .auth-dialog h2 {
-    font-size: 20px;
+    font-size: 21px;
   }
   .content {
     padding-left: 14px;
     padding-right: 14px;
   }
   .page-heading h1 {
-    font-size: 21px;
+    font-size: 22px;
   }
   .page-heading p {
-    font-size: 10px;
+    font-size: 11px;
   }
   .creation-column {
     padding: 17px 14px 14px;
@@ -2946,10 +2947,10 @@ button:focus-visible, input:focus-visible, select:focus-visible {
     gap: 8px;
   }
   .section-heading h2 {
-    font-size: 13px;
+    font-size: 14px;
   }
   .required-label {
-    font-size: 7px;
+    font-size: 8px;
     padding: 5px;
   }
   .url-input-wrap {
@@ -2957,13 +2958,13 @@ button:focus-visible, input:focus-visible, select:focus-visible {
     gap: 7px;
   }
   .url-input-wrap input {
-    font-size: 11px;
+    font-size: 12px;
   }
   .preview-content small {
-    font-size: 8px;
+    font-size: 9px;
   }
   .scan-status {
-    font-size: 7px;
+    font-size: 8px;
   }
   .form-footer {
     align-items: flex-start;
@@ -2984,24 +2985,24 @@ button:focus-visible, input:focus-visible, select:focus-visible {
     gap: 12px 8px;
   }
   .color-control {
-    font-size: 8px;
+    font-size: 9px;
   }
   .color-picker {
     gap: 3px;
     padding: 3px;
   }
   .color-picker code {
-    font-size: 8px;
+    font-size: 9px;
   }
   .select-control {
-    font-size: 8px;
+    font-size: 9px;
   }
   .select-control select {
     min-width: 72px;
-    font-size: 8px;
+    font-size: 9px;
   }
   .upload-button {
-    font-size: 8px;
+    font-size: 9px;
     padding: 6px;
   }
   .preview-column {
@@ -3020,23 +3021,23 @@ button:focus-visible, input:focus-visible, select:focus-visible {
     gap: 8px;
   }
   .result-link b {
-    font-size: 13px;
+    font-size: 14px;
   }
   .analytics-content .page-heading h1 {
-    font-size: 21px;
+    font-size: 22px;
   }
   .analytics-actions {
     gap: 6px;
   }
   .analytics-actions select {
-    font-size: 9px;
+    font-size: 10px;
     padding: 0 6px;
   }
   .metric-card {
     padding: 10px;
   }
   .metric-card > strong {
-    font-size: 20px;
+    font-size: 21px;
   }
   .metric-icon {
     width: 25px;

@@ -54,15 +54,15 @@ function ResetInner() {
           <>
             <h1 style={{ color: "#0f172a", marginTop: 0 }}>Choose a New Password</h1>
             <form onSubmit={submit} style={{ display: "grid", gap: 12 }}>
-              <label htmlFor="rp-pass" style={{ fontWeight: 600, fontSize: 13 }}>New password</label>
+              <label htmlFor="rp-pass" style={{ fontWeight: 600, fontSize: 14 }}>New password</label>
               <input id="rp-pass" type="password" required minLength={10} maxLength={128} value={password} onChange={(e) => setPassword(e.target.value)} style={{ padding: "10px 12px", border: "1px solid #e2e8f0", borderRadius: 6 }} />
-              <label htmlFor="rp-confirm" style={{ fontWeight: 600, fontSize: 13 }}>Confirm new password</label>
+              <label htmlFor="rp-confirm" style={{ fontWeight: 600, fontSize: 14 }}>Confirm new password</label>
               <input id="rp-confirm" type="password" required minLength={10} maxLength={128} value={confirm} onChange={(e) => setConfirm(e.target.value)} style={{ padding: "10px 12px", border: "1px solid #e2e8f0", borderRadius: 6 }} />
-              {error && <p style={{ color: "#dc2626", fontSize: 13 }} role="alert">{error}</p>}
+              {error && <p style={{ color: "#dc2626", fontSize: 14 }} role="alert">{error}</p>}
               <button type="submit" disabled={busy || !token} style={{ background: "#0284c7", color: "#fff", border: "none", padding: "11px 16px", borderRadius: 6, fontWeight: 700, cursor: "pointer" }}>
                 {busy ? "Updating..." : "Update Password"}
               </button>
-              {!token && <p style={{ color: "#dc2626", fontSize: 13 }}>Missing reset token. Please use the link from your email.</p>}
+              {!token && <p style={{ color: "#dc2626", fontSize: 14 }}>Missing reset token. Please use the link from your email.</p>}
             </form>
           </>
         )}

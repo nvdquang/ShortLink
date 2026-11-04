@@ -1105,7 +1105,7 @@ export default function Home() {
                         <QrCode size={16} />
                         <b>QR Code Studio</b>
                         {effectiveLogo && (
-                          <span style={{ fontSize: 9, color: "var(--sky)", marginLeft: 6, fontWeight: 700 }}>
+                          <span style={{ fontSize: 10, color: "var(--sky)", marginLeft: 6, fontWeight: 700 }}>
                             • {logo ? "Custom Logo" : "Default Logo"}
                           </span>
                         )}
@@ -1168,7 +1168,7 @@ export default function Home() {
                                   background: "#fff",
                                   borderRadius: 4,
                                   padding: "0 6px",
-                                  fontSize: 9,
+                                  fontSize: 10,
                                   color: "#dc2626",
                                 }}
                               >
@@ -1480,7 +1480,7 @@ export default function Home() {
                     : "Manage account plans and link limits, and issue one-time quota tokens."}
                 </p>
               </div>
-              <span className="admin-badge" style={{ fontSize: 11, padding: "6px 12px" }}>
+              <span className="admin-badge" style={{ fontSize: 12, padding: "6px 12px" }}>
                 Account: {user?.email}
               </span>
             </div>
@@ -1512,7 +1512,7 @@ export default function Home() {
                       {adminDefaultLogo ? (
                         <img src={adminDefaultLogo} alt="Default QR Logo" />
                       ) : (
-                        <span style={{ fontSize: 10, color: "#94a3b8", textAlign: "center", padding: 4 }}>No logo</span>
+                        <span style={{ fontSize: 11, color: "#94a3b8", textAlign: "center", padding: 4 }}>No logo</span>
                       )}
                     </div>
                     <div style={{ flex: 1, display: "grid", gap: 6 }}>
@@ -1565,7 +1565,7 @@ export default function Home() {
                         imageSettings={adminDefaultLogo ? { src: adminDefaultLogo, height: 16, width: 16, excavate: true } : undefined}
                       />
                     </div>
-                    <span style={{ fontSize: 10, color: "#64748b", lineHeight: 1.4 }}>
+                    <span style={{ fontSize: 11, color: "#64748b", lineHeight: 1.4 }}>
                       Live preview of QR code with selected default logo.
                     </span>
                   </div>
@@ -1598,10 +1598,10 @@ export default function Home() {
                   </div>
 
                   <div style={{ marginTop: 14, padding: 12, background: "var(--sky-subtle)", border: "1px solid #bae6fd", borderRadius: 6 }}>
-                    <span style={{ fontSize: 10, color: "var(--sky-dark)", fontWeight: 600, display: "block", marginBottom: 3 }}>
+                    <span style={{ fontSize: 11, color: "var(--sky-dark)", fontWeight: 600, display: "block", marginBottom: 3 }}>
                       Display URL format:
                     </span>
-                    <code style={{ fontSize: 12, color: "var(--sky)", fontWeight: 700 }}>
+                    <code style={{ fontSize: 13, color: "var(--sky)", fontWeight: 700 }}>
                       {adminDomain.trim()
                         ? `${adminDomain.replace(/^https?:\/\//i, "").replace(/\/+$/, "")}/aB3x9Qr`
                         : `${typeof window !== "undefined" ? window.location.host : "127.0.0.1:3333"}/aB3x9Qr`}
@@ -1637,7 +1637,7 @@ export default function Home() {
                   </div>
 
                   <div style={{ marginTop: 14, padding: 12, background: "var(--gold-pale)", border: "1px solid var(--gold-border)", borderRadius: 6 }}>
-                    <span style={{ fontSize: 10, color: "var(--gold-dark)", lineHeight: 1.4, display: "block" }}>
+                    <span style={{ fontSize: 11, color: "var(--gold-dark)", lineHeight: 1.4, display: "block" }}>
                       When a standard account reaches this limit ({adminFreeLimit} links), further creations will be blocked with a prompt to contact an administrator.
                     </span>
                   </div>
@@ -1710,7 +1710,7 @@ export default function Home() {
                 </div>
               </div>
               <div className="admin-actions-bar">
-                <div style={{ fontSize: 11, color: "#64748b" }}>
+                <div style={{ fontSize: 12, color: "#64748b" }}>
                   <ShieldCheck size={14} style={{ display: "inline", verticalAlign: "middle", marginRight: 4, color: "var(--gold)" }} />
                   Settings are saved directly to SQLite and take effect immediately across the entire platform.
                 </div>
@@ -1841,9 +1841,9 @@ export default function Home() {
                       />
                     </div>
                     <div style={{ overflowX: "auto" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                       <thead>
-                        <tr style={{ textAlign: "left", color: "#64748b", borderBottom: "1px solid var(--line)", fontSize: 10, textTransform: "uppercase", letterSpacing: 0.4 }}>
+                        <tr style={{ textAlign: "left", color: "#64748b", borderBottom: "1px solid var(--line)", fontSize: 11, textTransform: "uppercase", letterSpacing: 0.4 }}>
                           <th style={{ padding: "6px 8px" }}>Email</th>
                           <th style={{ padding: "6px 8px" }}>Role</th>
                           <th style={{ padding: "6px 8px" }}>Plan</th>
@@ -1874,7 +1874,7 @@ export default function Home() {
                                 style={{
                                   padding: "2px 8px",
                                   borderRadius: 999,
-                                  fontSize: 10,
+                                  fontSize: 11,
                                   fontWeight: 700,
                                   background: u.plan === "plus" ? "var(--gold-pale)" : "#f1f5f9",
                                   color: u.plan === "plus" ? "var(--gold-dark)" : "#475569",
@@ -1894,7 +1894,7 @@ export default function Home() {
                                   type="number"
                                   min={1}
                                   defaultValue={u.linkLimit ?? systemSettings?.freeLinkLimit ?? 10}
-                                  style={{ width: 64, padding: "3px 6px", border: "1px solid var(--line)", borderRadius: 4, fontSize: 11 }}
+                                  style={{ width: 64, padding: "3px 6px", border: "1px solid var(--line)", borderRadius: 4, fontSize: 12 }}
                                   onBlur={(e) => {
                                     const value = Math.max(1, parseInt(e.target.value, 10) || 1);
                                     if (value !== (u.linkLimit ?? systemSettings?.freeLinkLimit ?? 10)) {
@@ -1912,12 +1912,12 @@ export default function Home() {
                             </td>
                             <td style={{ padding: "6px 8px" }}>
                               {u.role === "admin" ? (
-                                <span style={{ fontSize: 10, color: "#94a3b8" }}>—</span>
+                                <span style={{ fontSize: 11, color: "#94a3b8" }}>—</span>
                               ) : u.plan === "plus" ? (
                                 <button
                                   type="button"
                                   className="upload-button"
-                                  style={{ color: "#dc2626", borderColor: "#fecaca", background: "#fef2f2", fontSize: 10 }}
+                                  style={{ color: "#dc2626", borderColor: "#fecaca", background: "#fef2f2", fontSize: 11 }}
                                   onClick={() => handleAdminUserUpdate(u.id, { plan: "free" })}
                                 >
                                   Downgrade to Free
@@ -1926,7 +1926,7 @@ export default function Home() {
                                 <button
                                   type="button"
                                   className="upload-button"
-                                  style={{ color: "var(--gold-dark)", borderColor: "var(--gold-border)", background: "var(--gold-pale)", fontWeight: 700, fontSize: 10 }}
+                                  style={{ color: "var(--gold-dark)", borderColor: "var(--gold-border)", background: "var(--gold-pale)", fontWeight: 700, fontSize: 11 }}
                                   onClick={() => handleAdminUserUpdate(u.id, { plan: "plus" })}
                                 >
                                   Upgrade to Plus
@@ -1985,7 +1985,7 @@ export default function Home() {
                   border: "1px solid #bbf7d0",
                   color: "#15803d",
                   borderRadius: 6,
-                  fontSize: 12,
+                  fontSize: 13,
                   lineHeight: 1.4,
                 }}
               >
@@ -2053,7 +2053,7 @@ export default function Home() {
                     background: "none",
                     border: "none",
                     color: "var(--sky)",
-                    fontSize: 12,
+                    fontSize: 13,
                     cursor: "pointer",
                     textDecoration: "underline",
                     fontWeight: 600,

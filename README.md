@@ -20,12 +20,6 @@ Trong IIS Manager, chọn cấp **server** → **Application Request Routing Cac
 
 Đây là cài đặt ARR cấp server, có thể ảnh hưởng các website khác cùng dùng ARR. Sau khi áp dụng, kiểm tra header `Location` ở cả hai đường:
 
-```powershell
-curl.exe -sS -D - -o NUL http://127.0.0.1:3333/LKSFhBz
-curl.exe -sS -D - -o NUL http://slink.hopto.org/LKSFhBz
-```
-
-Cả hai response cần giữ nguyên `Location: https://www.youtube.com/watch?v=H_iwa9IfA40`. Nếu vẫn bị biến đổi, kiểm tra thêm outbound rewrite rules trong IIS. Xem [hướng dẫn reverse proxy ARR của Microsoft](https://learn.microsoft.com/en-us/iis/extensions/url-rewrite-module/reverse-proxy-with-url-rewrite-v2-and-application-request-routing).
 
 ## Tài khoản
 - `POST /api/auth/register` — body `{ "email": "you@example.com", "password": "ít nhất 10 ký tự" }`, tạo tài khoản và gửi email kích hoạt; cần xác minh email trước khi đăng nhập.
