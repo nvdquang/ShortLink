@@ -774,7 +774,7 @@ export default function Home() {
             <ArrowUpRight size={14} />
           </button>
         </div>
-        {links.slice(0, 3).map((row) => (
+        {user && links.slice(0, 3).map((row) => (
           <button
             className="recent-link"
             key={row.id}
@@ -792,7 +792,7 @@ export default function Home() {
             </span>
           </button>
         ))}
-        {links.length === 0 && (
+        {(!user || links.length === 0) && (
           <div className="sidebar-empty">{user ? "Create your first short link" : "Sign in to manage your custom links"}</div>
         )}
 
