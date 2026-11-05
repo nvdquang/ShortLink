@@ -134,7 +134,8 @@ export type CreateLinkInput = {
 
 /** Free accounts are capped at 5 days from link creation; Plus and admins are unlimited. */
 function getMaxExpiryDays(plan: string | null | undefined, role: string | null | undefined): number | null {
-  if (role === "admin" || plan === "plus") return null;
+  const settings = getSystemSettings();
+  if (settings.systemMode === "free" || role === "admin" || plan === "plus") return null;
   return 5;
 }
 
@@ -178,17 +179,19 @@ export function createLink(input: CreateLinkInput): LinkRecord {
   }
 
   if (userId && maxExpiryDays !== null) {
-    const { freeLinkLimit } = getSystemSettings();
-    const owner = db.prepare("SELECT link_limit, link_bonus FROM Users WHERE id = ?").get(userId) as
-      | { link_limit: number | null; link_bonus: number }
-      | undefined;
-    const effectiveLimit = (owner?.link_limit ?? freeLinkLimit) + (owner?.link_bonus ?? 0);
-    const countRow = db.prepare("SELECT COUNT(*) as count FROM Links WHERE user_id = ?").get(userId) as { count: number };
-    if (countRow.count >= effectiveLimit) {
-      throw new ApiError(
-        403,
-        `Free plan limit of ${effectiveLimit} links reached. Please contact an administrator to upgrade.`
-      );
+    const { freeLinkLimit, systemMode } = getSystemSettings();
+    if (systemMode !== "free") {
+      const owner = db.prepare("SELECT link_limit, link_bonus FROM Users WHERE id = ?").get(userId) as
+        | { link_limit: number | null; link_bonus: number }
+        | undefined;
+      const effectiveLimit = (owner?.link_limit ?? freeLinkLimit) + (owner?.link_bonus ?? 0);
+      const countRow = db.prepare("SELECT COUNT(*) as count FROM Links WHERE user_id = ?").get(userId) as { count: number };
+      if (countRow.count >= effectiveLimit) {
+        throw new ApiError(
+          403,
+          `Free plan limit of ${effectiveLimit} links reached. Please contact an administrator to upgrade.`
+        );
+      }
     }
   }
 

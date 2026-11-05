@@ -43,6 +43,7 @@ export type SystemSettings = {
   freeLinkLimit: number;
   activationEmailFrom: string;
   requireEmailActivation: boolean;
+  systemMode: "free" | "plan";
 };
 
 /** Builds the public short URL from a code, with optional custom domain setting. */

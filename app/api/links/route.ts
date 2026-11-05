@@ -52,7 +52,8 @@ export async function GET(request: Request) {
     const userBonus = user
       ? Number((getDb().prepare("SELECT link_bonus FROM Users WHERE id = ?").get(user.id) as { link_bonus: number }).link_bonus)
       : 0;
-    const linkLimit = !user || user.role === "admin" || user.plan === "plus"
+    const isFreeSystemMode = settings.systemMode === "free";
+    const linkLimit = !user || user.role === "admin" || user.plan === "plus" || isFreeSystemMode
       ? null
       : (user.linkLimit ?? settings.freeLinkLimit) + userBonus;
     const usage = {

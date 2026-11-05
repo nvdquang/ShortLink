@@ -7,6 +7,7 @@ export type SystemSettings = {
   freeLinkLimit: number;
   activationEmailFrom: string;
   requireEmailActivation: boolean;
+  systemMode: "free" | "plan";
 };
 
 export const DEFAULT_SETTINGS: SystemSettings = {
@@ -16,6 +17,7 @@ export const DEFAULT_SETTINGS: SystemSettings = {
   freeLinkLimit: 10,
   activationEmailFrom: "",
   requireEmailActivation: true,
+  systemMode: "plan",
 };
 
 export function getSystemSettings(): SystemSettings {
@@ -25,6 +27,8 @@ export function getSystemSettings(): SystemSettings {
   for (const row of rows) {
     map[row.key] = row.value;
   }
+  const systemMode = map.system_mode === "free" ? "free" : "plan";
+
   return {
     defaultQrLogo: map.default_qr_logo ?? DEFAULT_SETTINGS.defaultQrLogo,
     shortlinkDomain: map.shortlink_domain ?? DEFAULT_SETTINGS.shortlinkDomain,
@@ -32,6 +36,7 @@ export function getSystemSettings(): SystemSettings {
     freeLinkLimit: Number(map.free_link_limit) > 0 ? Number(map.free_link_limit) : DEFAULT_SETTINGS.freeLinkLimit,
     activationEmailFrom: map.activation_email_from ?? DEFAULT_SETTINGS.activationEmailFrom,
     requireEmailActivation: map.require_email_activation !== "false",
+    systemMode,
   };
 }
 
@@ -42,6 +47,7 @@ export function updateSystemSettings(updates: {
   freeLinkLimit?: number | string | null;
   activationEmailFrom?: string | null;
   requireEmailActivation?: boolean;
+  systemMode?: "free" | "plan" | null;
 }): SystemSettings {
   const db = getDb();
   const upsert = db.prepare(`
@@ -72,6 +78,10 @@ export function updateSystemSettings(updates: {
     }
     if (updates.requireEmailActivation !== undefined) {
       upsert.run("require_email_activation", String(updates.requireEmailActivation));
+    }
+    if (updates.systemMode !== undefined) {
+      const normalizedMode = updates.systemMode === "free" ? "free" : "plan";
+      upsert.run("system_mode", normalizedMode);
     }
   });
   run();

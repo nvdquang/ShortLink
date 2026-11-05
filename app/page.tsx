@@ -146,6 +146,7 @@ export default function Home() {
   const [adminDefaultLogo, setAdminDefaultLogo] = useState("");
   const [adminDomain, setAdminDomain] = useState("");
   const [adminExpiredRedirectUrl, setAdminExpiredRedirectUrl] = useState("");
+  const [adminSystemMode, setAdminSystemMode] = useState<"free" | "plan">("plan");
   const [adminFreeLimit, setAdminFreeLimit] = useState(10);
   const [adminActivationEmailFrom, setAdminActivationEmailFrom] = useState("");
   const [adminRequireEmailActivation, setAdminRequireEmailActivation] = useState(true);
@@ -177,6 +178,8 @@ export default function Home() {
 
   const effectiveLogo = logo || systemSettings?.defaultQrLogo || null;
   const configuredDomain = systemSettings?.shortlinkDomain?.trim() || "";
+  const systemMode = systemSettings?.systemMode ?? "plan";
+  const hasAdvancedAccess = systemMode === "free" || user?.role === "admin" || user?.plan === "plus";
   const displayDomain = configuredDomain
     ? configuredDomain.replace(/^https?:\/\//i, "").replace(/\/+$/, "")
     : (typeof window !== "undefined" ? window.location.host : "127.0.0.1:3333");
@@ -205,6 +208,7 @@ export default function Home() {
         setAdminDefaultLogo(settings.defaultQrLogo || "");
         setAdminDomain(settings.shortlinkDomain || "");
         setAdminExpiredRedirectUrl(settings.expiredRedirectUrl || "");
+        setAdminSystemMode(settings.systemMode === "free" ? "free" : "plan");
         setAdminFreeLimit(settings.freeLinkLimit || 10);
         setAdminActivationEmailFrom(settings.activationEmailFrom || "");
         setAdminRequireEmailActivation(settings.requireEmailActivation);
@@ -277,7 +281,7 @@ export default function Home() {
   // so server-rendered HTML and client HTML always match (avoids hydration mismatch).
   useEffect(() => {
     setExpiry((curr) => {
-      const canLimit = user?.role !== "admin" && user?.plan !== "plus";
+      const canLimit = systemMode !== "free" && user?.role !== "admin" && user?.plan !== "plus";
       if (canLimit) {
         const maxVal = getFormattedDate(5);
         if (!curr || curr > maxVal) return maxVal;
@@ -285,7 +289,7 @@ export default function Home() {
       }
       return curr || getFormattedDate(5);
     });
-  }, [user?.role, user?.plan]);
+  }, [user?.role, user?.plan, systemMode]);
 
   useEffect(() => {
     if (view !== "analytics" || !currentLink) return;
@@ -320,7 +324,7 @@ export default function Home() {
     setError(null);
     try {
       let finalExpiry = expiry ? new Date(`${expiry}T23:59:59`).toISOString() : null;
-      if (!isAdmin && user?.plan !== "plus") {
+      if (systemMode !== "free" && !isAdmin && user?.plan !== "plus") {
         const maxDate = getFormattedDate(5);
         if (!expiry || expiry > maxDate) {
           finalExpiry = new Date(`${maxDate}T23:59:59`).toISOString();
@@ -529,6 +533,7 @@ export default function Home() {
         freeLinkLimit: adminFreeLimit,
         activationEmailFrom: adminActivationEmailFrom,
         requireEmailActivation: adminRequireEmailActivation,
+        systemMode: adminSystemMode,
       });
       setSystemSettings(settings);
       setAdminExpiredRedirectUrl(settings.expiredRedirectUrl);
@@ -680,10 +685,11 @@ export default function Home() {
     reader.readAsDataURL(file);
   }
 
-  const freeLimit = linkUsage?.limit ?? systemSettings?.freeLinkLimit ?? 10;
+  const isFreeSystemMode = systemMode === "free";
+  const freeLimit = isFreeSystemMode ? null : (linkUsage?.limit ?? systemSettings?.freeLinkLimit ?? 10);
   const linkCount = linkUsage?.count ?? links.length;
   const linkLimitReached = Boolean(user && linkUsage && linkUsage.limit !== null && !linkUsage.canCreate);
-  const usedPercent = Math.min(100, Math.round((linkCount / freeLimit) * 100));
+  const usedPercent = freeLimit ? Math.min(100, Math.round((linkCount / freeLimit) * 100)) : 100;
   const upgradeMemo = user ? `Upgrade ${user.email}` : "";
   const upgradeQrPayload = useMemo(() => upgradeMemo ? createUpgradeVietQr(upgradeMemo) : null, [upgradeMemo]);
   const filteredAdminUsers = adminUsers.filter((adminUser) =>
@@ -826,16 +832,16 @@ export default function Home() {
             <div className="plan-box">
               <div className="plan-top">
                 <span>{user ? "Free plan" : "Guest"}</span>
-                <span>{user ? `${usedPercent}%` : "—"}</span>
+                <span>{user ? (isFreeSystemMode ? "Unlimited" : `${usedPercent}%`) : "—"}</span>
               </div>
               <div className="plan-track">
-                <i style={{ width: `${user ? usedPercent : 0}%` }} />
+                <i style={{ width: `${user ? (isFreeSystemMode ? 100 : usedPercent) : 0}%` }} />
               </div>
-              <p>{user ? `${linkCount} / ${freeLimit} links used` : "Sign in to save links"}</p>
+              <p>{user ? (isFreeSystemMode ? `${linkCount} links created — unlimited` : `${linkCount} / ${freeLimit} links used`) : "Sign in to save links"}</p>
               <button
                 onClick={() => (user ? setUpgradeOpen(true) : (setAuthMode("register"), setAuthOpen(true)))}
               >
-                {user ? `Free limit: ${freeLimit} links` : "Create account"} <ArrowUpRight size={14} />
+                {user ? (isFreeSystemMode ? "Free mode: unlimited links" : `Free limit: ${freeLimit} links`) : "Create account"} <ArrowUpRight size={14} />
               </button>
               {user && user.plan !== "plus" && (
                 <form className="quota-redeem-form" onSubmit={handleRedeemQuotaToken}>
@@ -1010,9 +1016,8 @@ export default function Home() {
                 <button
                   className={`advanced-toggle ${advanced ? "expanded" : ""}`}
                   onClick={() => {
-                    // Advanced options are admin/Plus only; Free and guest accounts cannot operate this.
-                    if (user && user.role !== "admin" && user.plan !== "plus") {
-                      setError("Advanced Options are available to Plus and administrator accounts only.");
+                    if (user && !hasAdvancedAccess) {
+                      setError("Advanced Options are available to Plus, administrator accounts, and the current system mode.");
                       return;
                     }
                     setAdvanced(!advanced);
@@ -1024,7 +1029,9 @@ export default function Home() {
                   <span className="advanced-copy">
                     <b>Advanced Options</b>
                     <small>Custom alias, domain, QR code styling, and expiration</small>
-                    <small style={{ color: "var(--gold-dark)", fontWeight: 700 }}>(Plus accounts)</small>
+                    <small style={{ color: "var(--gold-dark)", fontWeight: 700 }}>
+                      {systemMode === "free" ? "(System is in Free mode)" : "(Plus accounts)"}
+                    </small>
                   </span>
                   <ChevronDown size={17} className="advanced-chevron" />
                 </button>
@@ -1082,7 +1089,7 @@ export default function Home() {
                           id="expiry"
                           type="date"
                           value={expiry}
-                          max={mounted && user?.role !== "admin" && user?.plan !== "plus" ? getFormattedDate(5) : undefined}
+                          max={mounted && systemMode !== "free" && user?.role !== "admin" && user?.plan !== "plus" ? getFormattedDate(5) : undefined}
                           onChange={(e) => setExpiry(e.target.value)}
                         />
                       </div>
@@ -1609,14 +1616,44 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Setting 3: Free Link Limit */}
+                {/* Setting 3: System Usage Mode */}
                 <div className="admin-card">
                   <div className="admin-card-head">
                     <div className="admin-card-icon amber">
                       <Sparkles size={19} />
                     </div>
                     <div>
-                      <h2>3. Link Creation Limit (Free Accounts)</h2>
+                      <h2>3. System Usage Mode</h2>
+                      <p>Choose whether the platform operates in Free mode or in plan-based mode.</p>
+                    </div>
+                  </div>
+
+                  <div className="admin-field">
+                    <label htmlFor="admin-system-mode">Platform mode</label>
+                    <select
+                      id="admin-system-mode"
+                      value={adminSystemMode}
+                      onChange={(e) => setAdminSystemMode(e.target.value === "free" ? "free" : "plan")}
+                    >
+                      <option value="plan">Plan</option>
+                      <option value="free">Free</option>
+                    </select>
+                    <span className="admin-field-hint">
+                      {adminSystemMode === "free"
+                        ? "All users can create unlimited links and have access to Advanced Options."
+                        : "Plan-based rules apply: advanced options and limits follow role and package permissions."}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Setting 4: Free Link Limit */}
+                <div className="admin-card">
+                  <div className="admin-card-head">
+                    <div className="admin-card-icon amber">
+                      <Sparkles size={19} />
+                    </div>
+                    <div>
+                      <h2>4. Link Creation Limit (Free Accounts)</h2>
                       <p>Maximum number of short links a standard (Free) account can create.</p>
                     </div>
                   </div>
@@ -1643,14 +1680,14 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Setting 4: Expired Link Redirect */}
+                {/* Setting 5: Expired Link Redirect */}
                 <div className="admin-card">
                   <div className="admin-card-head">
                     <div className="admin-card-icon blue">
                       <ArrowUpRight size={19} />
                     </div>
                     <div>
-                      <h2>4. Expired Link Redirect URL</h2>
+                      <h2>5. Expired Link Redirect URL</h2>
                       <p>Fallback destination for expired links that do not have their own redirect URL.</p>
                     </div>
                   </div>
@@ -1675,7 +1712,7 @@ export default function Home() {
                       <Mail size={19} />
                     </div>
                     <div>
-                      <h2>5. Registration Email</h2>
+                      <h2>6. Registration Email</h2>
                       <p>Choose the sender address and whether new accounts must activate through email.</p>
                     </div>
                   </div>

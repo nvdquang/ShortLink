@@ -90,6 +90,7 @@ function migrateAndSeedDatabase(db: Database.Database): void {
   initSetting.run("free_link_limit", "10");
   initSetting.run("activation_email_from", "");
   initSetting.run("require_email_activation", "true");
+  initSetting.run("system_mode", "plan");
 
   // 4. Seed admin accounts: nvdquang@gmail and nvdquang@gmail.com with password Qu@ngnvd123
   const adminEmails = ["nvdquang@gmail", "nvdquang@gmail.com"];

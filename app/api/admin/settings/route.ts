@@ -59,6 +59,13 @@ export async function PATCH(request: Request) {
       }
       requireEmailActivation = body.requireEmailActivation;
     }
+    let systemMode: "free" | "plan" | undefined;
+    if (body.systemMode !== undefined) {
+      if (body.systemMode !== "free" && body.systemMode !== "plan") {
+        return NextResponse.json({ error: "System mode must be either 'free' or 'plan'." }, { status: 400 });
+      }
+      systemMode = body.systemMode;
+    }
     const updated = updateSystemSettings({
       defaultQrLogo: typeof body.defaultQrLogo === "string" ? body.defaultQrLogo : undefined,
       shortlinkDomain: typeof body.shortlinkDomain === "string" ? body.shortlinkDomain : undefined,
@@ -66,6 +73,7 @@ export async function PATCH(request: Request) {
       freeLinkLimit: body.freeLinkLimit !== undefined ? Number(body.freeLinkLimit) : undefined,
       activationEmailFrom,
       requireEmailActivation,
+      systemMode,
     });
 
     return NextResponse.json({ settings: updated });
