@@ -1,5 +1,5 @@
 import Database from "better-sqlite3";
-import { mkdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync } from "node:fs";
 import { randomBytes, randomUUID, scryptSync } from "node:crypto";
 import path from "node:path";
 
@@ -122,14 +122,50 @@ type GlobalWithDb = typeof globalThis & { __shortlinkDb?: Database.Database };
 
 const globalWithDb = globalThis as GlobalWithDb;
 
+function isCorruptDatabaseError(error: unknown): boolean {
+  return error instanceof Error && (
+    error.message.includes("SQLITE_CORRUPT") ||
+    error.message.includes("database disk image is malformed") ||
+    error.message.includes("disk image is malformed")
+  );
+}
+
+function recoverCorruptDatabase(): void {
+  const dbBackup = `${DB_PATH}.corrupted-${Date.now()}`;
+  if (existsSync(dbBackup)) {
+    rmSync(dbBackup, { force: true });
+  }
+  if (existsSync(DB_PATH)) {
+    renameSync(DB_PATH, dbBackup);
+  }
+  for (const staleFile of [`${DB_PATH}-wal`, `${DB_PATH}-shm`]) {
+    if (existsSync(staleFile)) {
+      rmSync(staleFile, { force: true });
+    }
+  }
+}
+
 function createDatabase(): Database.Database {
   ensureDatabaseDirectory();
-  const db = new Database(DB_PATH);
-  db.pragma("foreign_keys = ON");
-  db.pragma("journal_mode = WAL");
-  db.exec(readFileSync(SCHEMA_PATH, "utf8"));
-  migrateAndSeedDatabase(db);
-  return db;
+
+  const openFreshDatabase = () => {
+    const db = new Database(DB_PATH);
+    db.pragma("foreign_keys = ON");
+    db.pragma("journal_mode = WAL");
+    db.exec(readFileSync(SCHEMA_PATH, "utf8"));
+    migrateAndSeedDatabase(db);
+    return db;
+  };
+
+  try {
+    return openFreshDatabase();
+  } catch (error) {
+    if (!isCorruptDatabaseError(error)) {
+      throw error;
+    }
+    recoverCorruptDatabase();
+    return openFreshDatabase();
+  }
 }
 
 /**

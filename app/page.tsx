@@ -1054,19 +1054,6 @@ export default function Home() {
                         </div>
                       </div>
                       <div>
-                        <label className="input-label" htmlFor="domain">
-                          Shortlink Domain
-                        </label>
-                        <input
-                          id="domain"
-                          type="text"
-                          readOnly
-                          value={configuredDomain || "127.0.0.1:3333 (Default)"}
-                          title={user?.role === "admin" ? "Configured in System Settings" : "System domain set by administrator"}
-                          style={{ background: "#f8fafc", cursor: "default" }}
-                        />
-                      </div>
-                      <div>
                         <label className="input-label" htmlFor="password">
                           Access Password
                         </label>
