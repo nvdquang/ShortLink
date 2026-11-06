@@ -40,6 +40,7 @@ import {
   signOut,
   signUp,
   requestPasswordReset,
+  resendActivationLink,
   shortUrlFor,
   updateSystemSettingsApi,
   fetchAdminUsers,
@@ -110,6 +111,10 @@ export default function Home() {
   const [view, setView] = useState<"create" | "analytics" | "admin" | "user-management">("create");
   const [advanced, setAdvanced] = useState(false);
   const [url, setUrl] = useState("");
+  const [urlCheck, setUrlCheck] = useState<{
+    value: string;
+    status: "waiting" | "checking" | "valid" | "invalid" | "error";
+  }>({ value: "", status: "waiting" });
   const [alias, setAlias] = useState("");
   const [qrColor, setQrColor] = useState("#0284c7");
   const [bgColor, setBgColor] = useState("#ffffff");
@@ -120,7 +125,6 @@ export default function Home() {
   const [mobileNav, setMobileNav] = useState(false);
   const [password, setPassword] = useState("");
   const [expiry, setExpiry] = useState<string>("");
-  const [expiredUrl, setExpiredUrl] = useState("");
   const [links, setLinks] = useState<LinkRecord[]>([]);
   const [linkUsage, setLinkUsage] = useState<LinkUsage | null>(null);
   const [currentLink, setCurrentLink] = useState<LinkRecord | null>(null);
@@ -185,13 +189,73 @@ export default function Home() {
     : (typeof window !== "undefined" ? window.location.host : "127.0.0.1:3333");
 
   const safeUrl = useMemo(() => {
-    if (!url.trim()) return "https://example.com/product/summer-collection";
+    if (!url.trim()) return "https://portfolio-quangnvd.vercel.app";
     return /^https?:\/\//i.test(url) ? url : `https://${url}`;
   }, [url]);
 
   const shortUrl = currentLink
     ? shortUrlFor(currentLink.short_code, configuredDomain)
     : `${displayDomain}/${alias.trim() || "summer26"}`;
+
+  useEffect(() => {
+    const value = url.trim();
+    if (!value) {
+      setUrlCheck({ value, status: "waiting" });
+      return;
+    }
+
+    const normalizedUrl = /^https?:\/\//i.test(value) ? value : `https://${value}`;
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(normalizedUrl);
+    } catch {
+      setUrlCheck({ value, status: "invalid" });
+      return;
+    }
+
+    if (
+      (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") ||
+      !parsedUrl.hostname ||
+      parsedUrl.username ||
+      parsedUrl.password
+    ) {
+      setUrlCheck({ value, status: "invalid" });
+      return;
+    }
+
+    const controller = new AbortController();
+    setUrlCheck({ value, status: "checking" });
+    const timeoutId = window.setTimeout(() => {
+      void fetch("/api/validate-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: parsedUrl.toString() }),
+        signal: controller.signal,
+      })
+        .then(async (response) => {
+          if (!response.ok) {
+            setUrlCheck({ value, status: "error" });
+            return;
+          }
+
+          const result: unknown = await response.json();
+          if (typeof result === "object" && result !== null && "valid" in result && typeof result.valid === "boolean") {
+            setUrlCheck({ value, status: result.valid ? "valid" : "invalid" });
+            return;
+          }
+
+          setUrlCheck({ value, status: "error" });
+        })
+        .catch(() => {
+          if (!controller.signal.aborted) setUrlCheck({ value, status: "error" });
+        });
+    }, 500);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [url]);
 
   useEffect(() => {
     setMounted(true);
@@ -335,7 +399,6 @@ export default function Home() {
         customAlias: alias.trim() || null,
         title: null,
         expiresAt: finalExpiry,
-        expiredUrl: expiredUrl.trim() || null,
         qrConfig: { color: qrColor, background: bgColor, resolution, logo: effectiveLogo },
       });
       setCurrentLink(link);
@@ -405,6 +468,21 @@ export default function Home() {
       }
     } catch (cause) {
       setAuthError(cause instanceof Error ? cause.message : "Authentication failed.");
+    } finally {
+      setAuthBusy(false);
+    }
+  }
+
+  async function handleResendActivationLink() {
+    if (authBusy) return;
+    setAuthBusy(true);
+    setAuthError(null);
+    setAuthNotice(null);
+    try {
+      const { message } = await resendActivationLink(authEmail, authPassword);
+      setAuthNotice(message);
+    } catch (cause) {
+      setAuthError(cause instanceof Error ? cause.message : "Unable to resend the activation link.");
     } finally {
       setAuthBusy(false);
     }
@@ -695,6 +773,8 @@ export default function Home() {
   const filteredAdminUsers = adminUsers.filter((adminUser) =>
     adminUser.email.toLowerCase().includes(adminUserEmailFilter.trim().toLowerCase()),
   );
+  const visibleUrlCheckStatus =
+    urlCheck.value === url.trim() ? urlCheck.status : url.trim() ? "checking" : "waiting";
 
   return (
     <main className="app-shell">
@@ -712,7 +792,7 @@ export default function Home() {
             <Link2 size={18} />
           </span>
           <span>
-            shortlink<span className="brand-dot">.</span>
+            ShortLink<span className="brand-dot">.</span>
           </span>
         </a>
 
@@ -739,7 +819,7 @@ export default function Home() {
         {user?.role === "admin" && (
           <>
             <div className="sidebar-divider" style={{ margin: "18px 8px 14px" }} />
-            <div className="workspace-label" style={{ color: "var(--gold-dark)", display: "flex", alignItems: "center", gap: 5 }}>
+            <div className="workspace-label" style={{ color: "var(--gold-light)", display: "flex", alignItems: "center", gap: 5 }}>
               <ShieldCheck size={13} /> ADMINISTRATION
             </div>
             <button
@@ -747,7 +827,7 @@ export default function Home() {
               style={
                 view === "admin"
                   ? { background: "var(--gold-pale)", color: "var(--gold-dark)", fontWeight: 700 }
-                  : { color: "var(--gold-dark)" }
+                  : { color: "var(--gold-light)" }
               }
               onClick={() => {
                 setView("admin");
@@ -761,7 +841,7 @@ export default function Home() {
               style={
                 view === "user-management"
                   ? { background: "var(--gold-pale)", color: "var(--gold-dark)", fontWeight: 700 }
-                  : { color: "var(--gold-dark)" }
+                  : { color: "var(--gold-light)" }
               }
               onClick={() => {
                 setView("user-management");
@@ -942,15 +1022,7 @@ export default function Home() {
           <div className="content create-content">
             <div className="page-heading">
               <div>
-                <div className="eyebrow">
-                  <span className="eyebrow-line" /> LINK MANAGEMENT
-                </div>
                 <h1>Create New Link</h1>
-                <p>Shorten URLs and generate customized QR codes in seconds.</p>
-                <p>
-                  ShortLink giúp bạn rút gọn link, tạo mã QR tùy chỉnh và theo dõi lượt nhấp nhanh chóng,
-                  thuận tiện trên cùng một nền tảng.
-                </p>
               </div>
               <button className="history-button" onClick={() => setView("analytics")}>
                 <Activity size={16} /> Link History
@@ -961,7 +1033,6 @@ export default function Home() {
               <div className="creation-column">
                 <section className="form-section">
                   <div className="section-heading">
-                    <span className="step-number">01</span>
                     <div>
                       <h2>Destination URL</h2>
                       <p>Enter the link you want to share</p>
@@ -1003,12 +1074,21 @@ export default function Home() {
                       <b>{url ? url.replace(/^https?:\/\//, "").split("/")[0] : "Preview destination page"}</b>
                       <small>
                         {url
-                          ? "Meta tags and preview image are not pre-rendered by API"
+                          ? "Destination URL · Địa chỉ trang đích"
                           : "Page title, favicon, and preview details will display here"}
                       </small>
                     </span>
-                    <span className="scan-status">
-                      <span /> {url ? "READY" : "WAITING FOR URL"}
+                    <span className={`scan-status ${visibleUrlCheckStatus}`} aria-live="polite">
+                      <span />
+                      {visibleUrlCheckStatus === "waiting"
+                        ? "WAITING FOR URL"
+                        : visibleUrlCheckStatus === "checking"
+                          ? "Checking URL... / Đang kiểm tra..."
+                          : visibleUrlCheckStatus === "valid"
+                            ? "Valid URL / URL hợp lệ"
+                            : visibleUrlCheckStatus === "invalid"
+                              ? "Invalid URL / Nhập URL hợp lệ"
+                              : "Unable to verify / Không thể xác minh"}
                     </span>
                   </div>
                 </section>
@@ -1028,7 +1108,7 @@ export default function Home() {
                   </span>
                   <span className="advanced-copy">
                     <b>Advanced Options</b>
-                    <small>Custom alias, domain, QR code styling, and expiration</small>
+                    <small>Custom alias, QR code styling, and expiration</small>
                     <small style={{ color: "var(--gold-dark)", fontWeight: 700 }}>
                       {systemMode === "free" ? "(System is in Free mode)" : "(Plus accounts)"}
                     </small>
@@ -1078,18 +1158,6 @@ export default function Home() {
                           value={expiry}
                           max={mounted && systemMode !== "free" && user?.role !== "admin" && user?.plan !== "plus" ? getFormattedDate(5) : undefined}
                           onChange={(e) => setExpiry(e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <label className="input-label" htmlFor="expired-url">
-                          Redirect URL After Expiration
-                        </label>
-                        <input
-                          id="expired-url"
-                          type="url"
-                          placeholder="https://example.com/link-expired"
-                          value={expiredUrl}
-                          onChange={(e) => setExpiredUrl(e.target.value)}
                         />
                       </div>
                     </div>
@@ -1262,7 +1330,7 @@ export default function Home() {
                     <QRCodeSVG
                       value={generated ? shortUrl : safeUrl}
                       size={174}
-                      fgColor={qrColor}
+                      fgColor="#000000"
                       bgColor={bgColor}
                       level="H"
                       imageSettings={
@@ -1285,25 +1353,62 @@ export default function Home() {
                       <ArrowDownToLine size={15} /> Download
                     </button>
                   </div>
-                </div>
-                <div className="tip-card">
-                  <div className="tip-icon">
-                    <Sparkles size={16} />
+                  <div className="tip-card">
+                    <div className="tip-icon">
+                      <Sparkles size={16} />
+                    </div>
+                    <div>
+                      <b>Pro Tip</b>
+                      <p>
+                        Add a centered logo to build brand recognition. Use high-contrast colors for easy scanning.
+                        <br />
+                        Thêm logo ở giữa để tăng nhận diện thương hiệu. Chọn màu tương phản cao để mã QR dễ quét.
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <b>Pro Tip</b>
-                    <p>Adding a centered logo reinforces brand recognition. Select high-contrast colors for effortless scanning.</p>
-                  </div>
-                </div>
-                <div className="security-note">
-                  <LockKeyhole size={14} />
-                  <span>Secured with modern SSL encryption</span>
-                  <span className="security-check">
-                    <Check size={12} />
-                  </span>
                 </div>
               </aside>
             </div>
+
+            <section className="free-intro" aria-labelledby="free-intro-title">
+              <div className="free-intro-copy">
+                <div className="free-intro-eyebrow">
+                  <Sparkles size={20} /> FREE TO USE <span>·</span> MIỄN PHÍ
+                </div>
+                <h2 id="free-intro-title">
+                  Free Shorten links &amp; QR codes
+                  <br />
+                  <span>Short link &amp; mã QR miễn phí</span>
+                </h2>
+                <p>
+                  Shorten links, create custom QR codes, and track clicks — all in one place.
+                  <br />
+                  Rút gọn link, tạo mã QR tùy chỉnh và theo dõi lượt nhấp — tất cả trên cùng một nền tảng.
+                </p>
+              </div>
+              <div className="free-intro-benefits">
+                <div className="free-intro-benefit">
+                  <span className="free-intro-icon">
+                    <Link2 size={20} />
+                  </span>
+                  <span>
+                    <b>Shorten links <span>·</span> Rút gọn link</b>
+                    <small>Easy to share <span>·</span> Dễ dàng chia sẻ</small>
+                  </span>
+                  <strong>FREE</strong>
+                </div>
+                <div className="free-intro-benefit">
+                  <span className="free-intro-icon qr">
+                    <QrCode size={20} />
+                  </span>
+                  <span>
+                    <b>Create QR codes <span>·</span> Tạo mã QR</b>
+                    <small>Customize and download <span>·</span> Tùy chỉnh và tải xuống</small>
+                  </span>
+                  <strong>FREE</strong>
+                </div>
+              </div>
+            </section>
           </div>
         )}
 
@@ -1311,9 +1416,6 @@ export default function Home() {
           <div className="content analytics-content">
             <div className="page-heading">
               <div>
-                <div className="eyebrow">
-                  <span className="eyebrow-line" /> PERFORMANCE OVERVIEW
-                </div>
                 <h1>Link Analytics</h1>
                 <p>Track visitor engagement and performance metrics in real time.</p>
               </div>
@@ -2027,7 +2129,11 @@ export default function Home() {
                 maxLength={255}
                 placeholder="you@example.com"
                 value={authEmail}
-                onChange={(event) => setAuthEmail(event.target.value)}
+                onChange={(event) => {
+                  setAuthEmail(event.target.value);
+                  setAuthError(null);
+                  setAuthNotice(null);
+                }}
               />
               {!forgotMode && (
                 <>
@@ -2041,7 +2147,11 @@ export default function Home() {
                     maxLength={128}
                     placeholder={authMode === "register" ? "At least 10 characters" : "Enter password"}
                     value={authPassword}
-                    onChange={(event) => setAuthPassword(event.target.value)}
+                    onChange={(event) => {
+                      setAuthPassword(event.target.value);
+                      setAuthError(null);
+                      setAuthNotice(null);
+                    }}
                   />
                 </>
               )}
@@ -2049,6 +2159,16 @@ export default function Home() {
                 <p className="auth-error" role="alert">
                   {authError}
                 </p>
+              )}
+              {authMode === "login" && !forgotMode && authError?.includes("Account is not activated.") && (
+                <button
+                  type="button"
+                  className="auth-submit"
+                  disabled={authBusy || !authEmail.trim() || !authPassword}
+                  onClick={handleResendActivationLink}
+                >
+                  {authBusy ? "Sending..." : "Resend Activation Link"}
+                </button>
               )}
               <button className="auth-submit" type="submit" disabled={authBusy}>
                 {authBusy ? (
@@ -2271,9 +2391,9 @@ export default function Home() {
       )}
       <footer className="author-footer">
         <span>Author: MSc. Nguyen Vu Duy Quang</span>
-        <a href="mailto:nvdquang@gmail.com">Email: nvdquang@gmail.com</a>
+        <a href="mailto:nvdquang@gmail.com">Email: quang@lhu.edu.vn</a>
         <a href="tel:+84918884034">Mobile: (+84) 0918884034</a>
-        <span>Faculty of Information Technology - Lac Hong University - Viet Nam</span>
+        <span><a href="https://cs.lhu.edu.vn" target="_blank" rel="noopener noreferrer">Faculty of Information Technology </a> - Lac Hong University - Viet Nam</span>
       </footer>
     </main>
   );
