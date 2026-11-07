@@ -116,7 +116,7 @@ export default function Home() {
     status: "waiting" | "checking" | "valid" | "invalid" | "error";
   }>({ value: "", status: "waiting" });
   const [alias, setAlias] = useState("");
-  const [qrColor, setQrColor] = useState("#0284c7");
+  const [qrColor, setQrColor] = useState("#000000");
   const [bgColor, setBgColor] = useState("#ffffff");
   const [logo, setLogo] = useState<string | null>(null);
   const [resolution, setResolution] = useState("PNG");
@@ -1042,30 +1042,35 @@ export default function Home() {
                   <label className="input-label" htmlFor="destination">
                     Target URL
                   </label>
-                  <div className="url-input-wrap">
-                    <Globe2 size={17} />
-                    <input
-                      id="destination"
-                      type="url"
-                      placeholder="https://example.com/your-destination-page"
-                      value={url}
-                      onChange={(e) => {
-                        setUrl(e.target.value);
-                        setGenerated(false);
-                      }}
-                    />
-                    <button
-                      aria-label="Paste URL"
-                      className="paste-button"
-                      onClick={async () => {
-                        try {
-                          setUrl(await navigator.clipboard.readText());
-                        } catch {
-                          /* Clipboard permission is optional. */
-                        }
-                      }}
-                    >
-                      Paste
+                  <div className="url-submit-row">
+                    <div className="url-input-wrap">
+                      <Globe2 size={17} />
+                      <input
+                        id="destination"
+                        type="url"
+                        placeholder="https://example.com/your-destination-page"
+                        value={url}
+                        onChange={(e) => {
+                          setUrl(e.target.value);
+                          setGenerated(false);
+                        }}
+                      />
+                      <button
+                        aria-label="Paste URL"
+                        className="paste-button"
+                        onClick={async () => {
+                          try {
+                            setUrl(await navigator.clipboard.readText());
+                          } catch {
+                            /* Clipboard permission is optional. */
+                          }
+                        }}
+                      >
+                        Paste
+                      </button>
+                    </div>
+                    <button className="primary-button shorten-button" onClick={createLink} disabled={loading || linkLimitReached}>
+                      {loading ? "Generating..." : linkLimitReached ? "Link Limit Reached" : "Shorten & Generate QR"}
                     </button>
                   </div>
                   <div className="preview-strip">
@@ -1248,10 +1253,6 @@ export default function Home() {
                   <span>
                     <LockKeyhole size={14} /> Your short links are encrypted and secured
                   </span>
-                  <button className="primary-button" onClick={createLink} disabled={loading || linkLimitReached}>
-                    <Sparkles size={16} /> {loading ? "Generating..." : linkLimitReached ? "Link Limit Reached" : "Shorten & Generate QR"}{" "}
-                    <span className="button-arrow">↗</span>
-                  </button>
                 </div>
 
                 {linkLimitReached && (

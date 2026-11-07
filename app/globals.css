@@ -553,7 +553,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   display: grid;
   grid-template-columns: minmax(0, 1.65fr) minmax(275px, 0.82fr);
   gap: 20px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .free-intro {
@@ -750,6 +750,17 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   padding: 0 11px;
   color: #94a3b8;
   background: #fff;
+}
+
+.url-submit-row {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.url-submit-row .url-input-wrap {
+  flex: 1;
+  min-width: 0;
 }
 
 .url-input-wrap:focus-within, .alias-input:focus-within, .password-wrap:focus-within {
@@ -1119,6 +1130,14 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   transition: all 0.15s ease;
 }
 
+.url-submit-row .shorten-button {
+  height: 46px;
+  padding: 0 20px;
+  color: var(--gold);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
 .primary-button:hover {
   background: var(--sky-dark);
 }
@@ -1134,6 +1153,8 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 
 .preview-card {
+  display: flex;
+  flex-direction: column;
   background: white;
   border: 1px solid var(--gold-border);
   border-radius: 8px;
@@ -1179,7 +1200,9 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 
 .qr-stage {
+  flex: 1;
   height: 246px;
+  min-height: 215px;
   margin-top: 16px;
   display: grid;
   place-items: center;
@@ -1192,6 +1215,9 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 
 .qr-stage svg {
+  width: min(90%, 230px);
+  height: auto;
+  aspect-ratio: 1 / 1;
   padding: 8px;
   border: 1px solid var(--line);
   border-radius: 6px;
@@ -3134,6 +3160,9 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   }
   .url-input-wrap input {
     font-size: 12px;
+  }
+  .url-submit-row {
+    flex-direction: column;
   }
   .preview-content small {
     font-size: 9px;
