@@ -549,11 +549,21 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   background: #f1f5f9;
 }
 
-.create-grid {
+.create-grid,
+.create-header-row {
   display: grid;
   grid-template-columns: minmax(0, 1.65fr) minmax(275px, 0.82fr);
   gap: 20px;
   align-items: stretch;
+}
+
+.create-header-row {
+  margin-bottom: 18px;
+}
+
+.create-header-row .history-button {
+  justify-self: end;
+  align-self: center;
 }
 
 .free-intro {
@@ -591,7 +601,6 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   color: #ffe08a;
 }
 
-.free-intro-benefit b span,
 .free-intro-benefit small span {
   color: #9eb4d1;
 }
@@ -655,8 +664,9 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   min-width: 0;
 }
 
-.free-intro-benefit b {
-  color: var(--ink);
+.free-intro-benefit b,
+.free-intro-benefit b span {
+  color: var(--gold-dark);
   font-size: 13px;
 }
 
@@ -2845,7 +2855,8 @@ button:focus-visible, input:focus-visible, select:focus-visible {
     padding-left: 55px;
     padding-right: 55px;
   }
-  .create-grid {
+  .create-grid,
+  .create-header-row {
     grid-template-columns: minmax(0, 1.8fr) minmax(300px, 0.78fr);
     gap: 24px;
   }
@@ -2880,7 +2891,8 @@ button:focus-visible, input:focus-visible, select:focus-visible {
     padding-left: 24px;
     padding-right: 24px;
   }
-  .create-grid {
+  .create-grid,
+  .create-header-row {
     grid-template-columns: minmax(0, 1.5fr) minmax(250px, 0.8fr);
     gap: 14px;
   }
@@ -2988,7 +3000,8 @@ button:focus-visible, input:focus-visible, select:focus-visible {
     justify-content: center;
     flex: none;
   }
-  .create-grid {
+  .create-grid,
+  .create-header-row {
     grid-template-columns: 1fr;
     gap: 14px;
   }

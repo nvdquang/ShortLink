@@ -5,6 +5,7 @@ import { QRCodeSVG } from "qrcode.react";
 import {
   Activity,
   ArrowDownToLine,
+  ArrowUpFromLine,
   ArrowUpRight,
   BarChart3,
   Check,
@@ -123,7 +124,6 @@ export default function Home() {
   const [generated, setGenerated] = useState(false);
   const [copied, setCopied] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
-  const [password, setPassword] = useState("");
   const [expiry, setExpiry] = useState<string>("");
   const [links, setLinks] = useState<LinkRecord[]>([]);
   const [linkUsage, setLinkUsage] = useState<LinkUsage | null>(null);
@@ -378,10 +378,6 @@ export default function Home() {
     }
     if (!url.trim()) {
       setError("Please enter a destination URL.");
-      return;
-    }
-    if (password.trim()) {
-      setError("Password protection is currently not supported by the backend.");
       return;
     }
     setLoading(true);
@@ -1020,9 +1016,28 @@ export default function Home() {
 
         {view === "create" && (
           <div className="content create-content">
-            <div className="page-heading">
-              <div>
-                <h1>Create New Link</h1>
+            <div className="create-header-row">
+              <div className="free-intro-benefits">
+                <div className="free-intro-benefit">
+                  <span className="free-intro-icon">
+                    <Link2 size={20} />
+                  </span>
+                  <span>
+                    <b>Shorten links <span>·</span> Rút gọn link</b>
+                    <small>Easy to share <span>·</span> Dễ dàng chia sẻ</small>
+                  </span>
+                  <strong>FREE</strong>
+                </div>
+                <div className="free-intro-benefit">
+                  <span className="free-intro-icon qr">
+                    <QrCode size={20} />
+                  </span>
+                  <span>
+                    <b>Create QR codes <span>·</span> Tạo mã QR</b>
+                    <small>Customize and download <span>·</span> Tùy chỉnh và tải xuống</small>
+                  </span>
+                  <strong>FREE</strong>
+                </div>
               </div>
               <button className="history-button" onClick={() => setView("analytics")}>
                 <Activity size={16} /> Link History
@@ -1035,7 +1050,7 @@ export default function Home() {
                   <div className="section-heading">
                     <div>
                       <h2>Destination URL</h2>
-                      <p>Enter the link you want to share</p>
+                      <p><b>Enter the link you want to share</b></p>
                     </div>
                     <span className="required-label">REQUIRED</span>
                   </div>
@@ -1139,21 +1154,6 @@ export default function Home() {
                         </div>
                       </div>
                       <div>
-                        <label className="input-label" htmlFor="password">
-                          Access Password
-                        </label>
-                        <div className="password-wrap">
-                          <LockKeyhole size={15} />
-                          <input
-                            id="password"
-                            type="password"
-                            placeholder="Optional (coming soon)"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                          />
-                        </div>
-                      </div>
-                      <div>
                         <label className="input-label" htmlFor="expiry">
                           Expiration Date
                         </label>
@@ -1222,8 +1222,8 @@ export default function Home() {
                                   if (file) setLogo(URL.createObjectURL(file));
                                 }}
                               />
-                              {logo ? <Check size={14} /> : <ArrowDownToLine size={14} />}
-                              {logo ? "Selected" : effectiveLogo ? "Change" : "Upload"}
+                              {logo ? <Check size={14} /> : <ArrowUpFromLine size={14} />}
+                              {logo ? "Selected" : "Upload Logo"}
                             </label>
                             {logo && (
                               <button
@@ -1340,7 +1340,7 @@ export default function Home() {
                     />
                   </div>
                   <div className="qr-preview-url">
-                    <span>{generated ? shortUrl : url || "Enter a URL to preview QR code"}</span>
+                    <span><b>{generated ? shortUrl : url || "Enter a URL to preview QR code"}</b></span>
                     <button title="Copy short link" onClick={copyLink} disabled={!generated && !currentLink}>
                       {copied ? <Check size={15} /> : <Copy size={15} />}
                     </button>
@@ -1353,19 +1353,6 @@ export default function Home() {
                     <button onClick={downloadQr}>
                       <ArrowDownToLine size={15} /> Download
                     </button>
-                  </div>
-                  <div className="tip-card">
-                    <div className="tip-icon">
-                      <Sparkles size={16} />
-                    </div>
-                    <div>
-                      <b>Pro Tip</b>
-                      <p>
-                        Add a centered logo to build brand recognition. Use high-contrast colors for easy scanning.
-                        <br />
-                        Thêm logo ở giữa để tăng nhận diện thương hiệu. Chọn màu tương phản cao để mã QR dễ quét.
-                      </p>
-                    </div>
                   </div>
                 </div>
               </aside>
@@ -1386,28 +1373,6 @@ export default function Home() {
                   <br />
                   Rút gọn link, tạo mã QR tùy chỉnh và theo dõi lượt nhấp — tất cả trên cùng một nền tảng.
                 </p>
-              </div>
-              <div className="free-intro-benefits">
-                <div className="free-intro-benefit">
-                  <span className="free-intro-icon">
-                    <Link2 size={20} />
-                  </span>
-                  <span>
-                    <b>Shorten links <span>·</span> Rút gọn link</b>
-                    <small>Easy to share <span>·</span> Dễ dàng chia sẻ</small>
-                  </span>
-                  <strong>FREE</strong>
-                </div>
-                <div className="free-intro-benefit">
-                  <span className="free-intro-icon qr">
-                    <QrCode size={20} />
-                  </span>
-                  <span>
-                    <b>Create QR codes <span>·</span> Tạo mã QR</b>
-                    <small>Customize and download <span>·</span> Tùy chỉnh và tải xuống</small>
-                  </span>
-                  <strong>FREE</strong>
-                </div>
               </div>
             </section>
           </div>
